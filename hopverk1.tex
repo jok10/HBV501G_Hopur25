@@ -1,23 +1,36 @@
-\documentclass[12pt]{article}
-\usepackage[a4paper,margin=1in]{geometry}
-\usepackage{enumitem}
+\documentclass{article}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Assignment 1 - Vision and Scope Document}
+\author{Team [Number]}
+\date{\today}
 
 \begin{document}
 
-\section*{Vision Statement}
-blabla
+\maketitle
 
-\section*{2. Use Cases}
+\section{Project Vision}
 
-\subsection*{Fully Dressed Use Case}
+% Provide your project vision document here
 
-\textbf{Name:} UC1 -- Add songs to a playlist
+\subsection{1.5 Vision Statement} 
 
+\subsection{1.x Additional Section Title (except 1.1)} 
+
+\subsection{2.x Additional Section Title (except 2.1)}
+
+\section{Use Case Document}
+
+\subsection{Add Songs to a Playlist [UC1]}
 \textbf{Primary Actor:} User
 
 \textbf{Preconditions:} 
-\begin{itemize}[noitemsep]
-  \item The user must be logged into the system. 
+\begin{itemize}
+  \item The user must be logged into the system.
   \item The user must have a playlist that has already been created.
 \end{itemize}
 
@@ -25,44 +38,85 @@ blabla
 The song selected by the user is added to the playlist.
 
 \textbf{Main Success Scenario:}  
-The user opens a playlist that already exists. They select the ``add song'' option. They search for a song (as described in brief UC4) and select it. The system adds the song to the playlist and gives a confirmation that the song has been successfully added.
+The user opens a playlist that already exists. They select the ``add song'' option. They search for a song (see UC4) and select it. The system adds the song to the playlist and confirms successful addition.
 
 \textbf{Extensions / Alternate Scenarios:}  
-If a song has already been added to the playlist, the system displays ``this song has already been added to the playlist.''
+If the song is already in the playlist, the system displays ``This song has already been added to the playlist.''
 
 \textbf{Miscellaneous / Open Issues:}  
 Possibility to add multiple songs at once.
 
-\subsection*{Brief Use Cases}
+\subsection{Search Song [UC2]}
+\textbf{Primary Actor:} User
 
-\textbf{Name:} UC4 -- Search Song  
-
-\textbf{Primary Actor:} User  
-
-\textbf{Precondition:} User must be logged into the system.  
-
-\textbf{Trigger:} User selects the ``search'' option.  
-
-\textbf{Main Success Scenario:}  
-The user enters a search query (song name, artist, or both). The system displays a list of matching songs. The user can view details of a selected song.  
+\textbf{Preconditions:}
+\begin{itemize}
+  \item None
+\end{itemize}
 
 \textbf{Success Guarantee:}  
-The system returns relevant songs that match the search criteria.  
+The system returns relevant songs matching the user’s search criteria.
 
-\textbf{Extensions / Alternate Scenarios:}  
-\begin{itemize}[noitemsep]
+\textbf{Main Success Scenario:}
+\begin{enumerate}
+  \item The user selects the ``search'' option.
+  \item The user enters a search query (song name, artist, or both).
+  \item The system searches the music database.
+  \item The system displays a list of matching songs.
+  \item The user can view details of a selected song.
+\end{enumerate}
+
+\textbf{Extensions / Alternate Scenarios:}
+\begin{itemize}
   \item If no results are found, the system displays ``No songs found.''
   \item If the search query is empty, the system prompts the user to enter a valid search term.
 \end{itemize}
 
 \textbf{Miscellaneous / Open Issues:}  
-Consider supporting advanced search filters (e.g., by album, genre, release year).  
+Consider supporting advanced search filters (e.g., album, genre, release year).
 
-\vspace{1em}
+\subsection{Brief Use Cases}
 
-\textbf{Name:} UC5 -- Sharing Playlists  
+\begin{itemize}
+    \item{\textbf{Brief Use Case 1 [UC5]}: The user is able to generate a link to share their playlist with friends, family, and the community.}
+    \item{\textbf{Brief Use Case 2 [UC6]}: ...}
+\end{itemize}
 
-\textbf{Description:}  
-The user is able to generate a link to share their playlist with friends, family, and the community.  
+\section{Project Estimation and Prioritization}
+
+Below is a table with prioritized use cases:
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|c|c|c|}
+    \hline
+    Use Case & Time Estimation & Priority \\ \hline
+    UC1      & 10             & P1       \\ \hline
+    UC4      & 12             & P1       \\ \hline
+    UC5      & 8              & P2       \\ \hline
+  \end{tabular}
+\end{table}
+
+\section{Project Plan and Schedule}
+
+\begin{longtable}{|c|c|c|c|c|c|}
+    \hline
+    \textbf{Week} & \textbf{Use Cases} & \textbf{Expected Hours} & \textbf{P.O. (Initials)} & \textbf{Sprint} & \textbf{Consultation}\\
+    \hline
+    1 & None & XX & AB & 1 & \textbf{A1 Presentation}\\
+    \hline
+    2 & UC1, Android skeleton & XX & AB & 1 & Model Drafts\\
+    \hline
+    3 & UC4, UC5 & XX & CD & 2 & \textbf{A2 Presentation}\\
+    \hline
+    4 & UC6, UC7 & XX & CD & 2 & Dev support\\
+    \hline
+    5 & UC8, UC9 & XX & EF & 3 & \textbf{A3 Presentation}\\
+    \hline
+\end{longtable}
+
+\section{Project skeleton}
+Link to your Github. Indicate who owns which account.  
+Ensure everyone performs a small commit.
 
 \end{document}
