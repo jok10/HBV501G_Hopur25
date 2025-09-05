@@ -1,0 +1,68 @@
+\documentclass[12pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{enumitem}
+
+\begin{document}
+
+\section*{Vision Statement}
+blabla
+
+\section*{2. Use Cases}
+
+\subsection*{Fully Dressed Use Case}
+
+\textbf{Name:} UC1 -- Add songs to a playlist
+
+\textbf{Primary Actor:} User
+
+\textbf{Preconditions:} 
+\begin{itemize}[noitemsep]
+  \item The user must be logged into the system. 
+  \item The user must have a playlist that has already been created.
+\end{itemize}
+
+\textbf{Success Guarantee:}  
+The song selected by the user is added to the playlist.
+
+\textbf{Main Success Scenario:}  
+The user opens a playlist that already exists. They select the ``add song'' option. They search for a song (as described in brief UC4) and select it. The system adds the song to the playlist and gives a confirmation that the song has been successfully added.
+
+\textbf{Extensions / Alternate Scenarios:}  
+If a song has already been added to the playlist, the system displays ``this song has already been added to the playlist.''
+
+\textbf{Miscellaneous / Open Issues:}  
+Possibility to add multiple songs at once.
+
+\subsection*{Brief Use Cases}
+
+\textbf{Name:} UC4 -- Search Song  
+
+\textbf{Primary Actor:} User  
+
+\textbf{Precondition:} User must be logged into the system.  
+
+\textbf{Trigger:} User selects the ``search'' option.  
+
+\textbf{Main Success Scenario:}  
+The user enters a search query (song name, artist, or both). The system displays a list of matching songs. The user can view details of a selected song.  
+
+\textbf{Success Guarantee:}  
+The system returns relevant songs that match the search criteria.  
+
+\textbf{Extensions / Alternate Scenarios:}  
+\begin{itemize}[noitemsep]
+  \item If no results are found, the system displays ``No songs found.''
+  \item If the search query is empty, the system prompts the user to enter a valid search term.
+\end{itemize}
+
+\textbf{Miscellaneous / Open Issues:}  
+Consider supporting advanced search filters (e.g., by album, genre, release year).  
+
+\vspace{1em}
+
+\textbf{Name:} UC5 -- Sharing Playlists  
+
+\textbf{Description:}  
+The user is able to generate a link to share their playlist with friends, family, and the community.  
+
+\end{document}
