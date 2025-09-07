@@ -15,14 +15,33 @@
 
 \section{Project Vision}
 
-% Provide your project vision document here
+\subsection{1.3 Business Objectives}
+\begin{itemize}
+    \item Users can create, delete and name their playlists, as well as set their visibility to others.
+    \item Users can add start and end markers to individual tracks, allowing them to play only the parts they want, skipping unwanted sections.
+    \item The order of tracks in each playlist remains stable after edits or deletion of the actual tracks.
+    \item Playlists can be tagged, searched and filtered, helping users find the content they want.
+    \item Users can share their playlists via visibility setting and save playlists made by others.
+    \item No one other than the playlist owner can modify their original playlist.
+    \item A user can make a copy of another user's playlist if they want to add their own modifications without manually rebuilding the said playlist.
+    \item The playlist system should be smooth and support all presented use cases.
+\end{itemize}
 
 \subsection{1.5 Vision Statement} 
-Our system shall allow people to organize their own music, listen to it, and enjoy it without advertisements. It will be simple, intuitive, and enjoyable to use.
+For music enthusiasts who seek hassle-free playlist creation, searching and sharing, with precise control over which parts of songs are heard in a playlist. Our playlist manager supports track start/end markers as metadata and allows building playlists that play only the track parts you want. Unlike other media player vendors, it lets you set start/end markers for each individual track and combine them into quick playlists, skipping the undesired parts of your music library altogether.
 
-\subsection{1.x Additional Section Title (except 1.1)} 
-
-\subsection{2.x Additional Section Title (except 2.1)}
+\subsection{2.2 Scope of the Initial Release}
+\begin{itemize}
+    \item Accounts: creation, deletion, profile customisation, the ability to sign in.
+    \item Playlists: creation, deletion, naming, renaming, visibility setting (public/private).
+    \item Default track catalogue containing full metadata (e.g., artist, title, album, tags).
+    \item Start/end marker metadata, stored per track and applied within a playlist.
+    \item Track search with result filtering and paginated results.
+    \item Stable ordering rules within a playlist.
+    \item Adding and removing playlists from favourites.
+    \item Playlist copying for personal modifications.
+    \item The ability to set or remove a playlist image.
+\end{itemize}
 
 \section{Use Case Document}
 
@@ -39,33 +58,35 @@ Our system shall allow people to organize their own music, listen to it, and enj
 The song selected by the user is added to the playlist.
 
 \textbf{Main Success Scenario:}  
-The user opens a playlist that already exists. They select the ``add song'' option. They search for a song (see UC4) and select it. The system adds the song to the playlist and confirms successful addition.
+The user opens a playlist that already exists. They select the ``add song'' option. They search for a song (see UC2) and select it. The system adds the song to the playlist and gives a confirmation that the song has successfully been added to the playlist.
 
 \textbf{Extensions / Alternate Scenarios:}  
-If the song is already in the playlist, the system displays ``This song has already been added to the playlist.''
+If a song has already been added to the playlist, the system displays ``This song has already been added to the playlist.''
 
 \textbf{Miscellaneous / Open Issues:}  
-Possibility to add multiple songs at once.
+The ability to add multiple songs at once.
 
-\subsection{Search Song [UC2]}
+\subsection{Search Tracks [UC2]}
 \textbf{Primary Actor:} User
 
 \textbf{Preconditions:}
 \begin{itemize}
-  \item None
+  \item None.
 \end{itemize}
 
-\textbf{Success Guarantee:}  
-The system returns relevant songs matching the user’s search criteria.
+\textbf{Trigger:} User selects the ``search'' option.
 
 \textbf{Main Success Scenario:}
 \begin{enumerate}
   \item The user selects the ``search'' option.
-  \item The user enters a search query (song name, artist, album, etc).
+  \item The user enters a search query (song name, artist, album, etc.).
   \item The system searches the music database.
   \item The system displays a list of matching songs.
   \item The user can view details of a selected song.
 \end{enumerate}
+
+\textbf{Success Guarantee:}  
+The system returns relevant songs that match the search criteria.
 
 \textbf{Extensions / Alternate Scenarios:}
 \begin{itemize}
@@ -73,51 +94,89 @@ The system returns relevant songs matching the user’s search criteria.
   \item If the search query is empty, the system prompts the user to enter a valid search term.
 \end{itemize}
 
-\textbf{Miscellaneous / Open Issues:}  
-Consider supporting advanced search filters (e.g., album, genre, release year).
+\subsection{Set Start/End Times for Tracks in a Playlist [UC3]}
+\textbf{Primary Actor:} User who is a playlist owner
+
+\textbf{Preconditions:}
+\begin{itemize}
+  \item User is signed in.
+  \item User owns the playlist.
+  \item The playlist contains at least one track.
+\end{itemize}
+
+\textbf{Main Success Scenario:}
+\begin{enumerate}
+  \item The user selects a track inside their playlist.
+  \item The user provides start and end times (e.g., 00{:}50--01{:}35).
+  \item The system checks and confirms the times.
+  \item The system saves the metadata and confirms the operation.
+  \item The user sees the updated track in the playlist with correct time markers.
+\end{enumerate}
+
+\textbf{Success Guarantee:}  
+The system stores the marker data for a given track in the context of the playlist.
+
+\textbf{Extensions / Alternate Scenarios:}
+\begin{itemize}
+  \item The provided start/end times are invalid (e.g., exceed the song length or are negative).
+  \item The user cancels the operation; the time markers are not updated.
+  \item The track is removed during the operation; the system detects the change and aborts the operation.
+\end{itemize}
 
 \subsection{Brief Use Cases}
 
 \begin{itemize}
-    \item{\textbf{Brief Use Case 1 [UC5]}: The user is able to generate a link to share their playlist with friends, family, and the community.}
-    \item{\textbf{Brief Use Case 2 [UC6]}: ...}
+    \item \textbf{Brief Use Case 1 [UC4] -- Delete Playlist:} The user is able to permanently delete a playlist.
+    \item \textbf{Brief Use Case 2 [UC5] -- Share Playlists:} The user is able to generate a link to share their playlist with friends, family and the community.
+    \item \textbf{Brief Use Case 3 [UC6] -- Save Playlists:} The user is able to save any public playlist to their favourites, or remove it from favourites.
+    \item \textbf{Brief Use Case 4 [UC7] -- Remove Song from a Playlist:} The user can remove a song from their playlist.
 \end{itemize}
 
 \section{Project Estimation and Prioritization}
 
-Below is a table with prioritized use cases:
+Below is a table with prioritized use cases. (Fill in time estimates and priorities as needed.)
 
 \begin{table}[h]
   \centering
   \begin{tabular}{|c|c|c|}
     \hline
     Use Case & Time Estimation & Priority \\ \hline
-    UC1      & 10             & P1       \\ \hline
-    UC4      & 12             & P1       \\ \hline
-    UC5      & 8              & P2       \\ \hline
+    UC1 &  &  \\ \hline
+    UC2 &  &  \\ \hline
+    UC3 &  &  \\ \hline
   \end{tabular}
 \end{table}
 
 \section{Project Plan and Schedule}
 
+Inception: Use cases and vision scope
+
+Elaboration: UC2
+
+Construction: UC1, UC4, UC5
+
+Transition:
+
 \begin{longtable}{|c|c|c|c|c|c|}
     \hline
-    \textbf{Week} & \textbf{Use Cases} & \textbf{Expected Hours} & \textbf{P.O. (Initials)} & \textbf{Sprint} & \textbf{Consultation}\\
+    \textbf{Week} & \textbf{Use Cases} & \textbf{Expected Hours} & \textbf{P.O. (Initials)} & \textbf{Sprint} & \textbf{Consultation} \\
     \hline
-    1 & None & XX & AB & 1 & \textbf{A1 Presentation}\\
+    1 & None &  &  & 1 & \textbf{A1 Presentation} \\
     \hline
-    2 & UC1, Android skeleton & XX & AB & 1 & Model Drafts\\
+    2 & UC1, Android skeleton &  &  & 1 & Model Drafts \\
     \hline
-    3 & UC4, UC5 & XX & CD & 2 & \textbf{A2 Presentation}\\
+    3 & UC2, UC3 &  &  & 2 & \textbf{A2 Presentation} \\
     \hline
-    4 & UC6, UC7 & XX & CD & 2 & Dev support\\
+    4 & UC4, UC5, UC6 &  &  & 2 & Dev support \\
     \hline
-    5 & UC8, UC9 & XX & EF & 3 & \textbf{A3 Presentation}\\
+    5 & UC7, UC8 &  &  & 2 & Dev support \\
+    \hline
+    6 & UC9, UC10 &  &  & 3 & \textbf{A3 Presentation} \\
     \hline
 \end{longtable}
 
 \section{Project skeleton}
-Link to your Github. Indicate who owns which account.  
+Link to your Github. Indicate who owns which account. \\
 Ensure everyone performs a small commit.
 
 \end{document}
