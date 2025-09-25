@@ -9,3 +9,5 @@
 *.toc
 *.synctex.gz
 *.synctex(busy)
+~$*.docx
+~*.tmp
