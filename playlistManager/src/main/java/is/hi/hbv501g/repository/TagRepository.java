@@ -1,4 +1,9 @@
 package is.hi.hbv501g.repository;
 
-public interface TagRepository {
+import is.hi.hbv501g.domain.Tag;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+
+public interface TagRepository extends JpaRepository<Tag, Long> {
+
 }
