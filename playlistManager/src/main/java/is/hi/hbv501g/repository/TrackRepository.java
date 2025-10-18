@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 
 public interface TrackRepository extends JpaRepository<Track, Long> {
-    Page<Track> findByTitleContainingIgnoreCaseOrArtistContainingIgnoreCase(String s1, String s2, Pageable pageable);
+    Page<Track> findByTitleContainingIgnoreCaseOrArtistContainingIgnoreCaseOrAlbumContainingIgnoreCase(String s1, String s2, String s3, Pageable pageable);
 }
