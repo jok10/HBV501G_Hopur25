@@ -32,7 +32,7 @@ SELECT * FROM TRACKS ORDER BY TRACK_ID;
 
 ---
 
-## **Verified Use Cases (UC)**
+# **Verified Use Cases (UC)**
 *(as of 19 Oct 2025)*
 
 
@@ -165,4 +165,4 @@ Invoke-RestMethod -Method Post `
 ```powershell
 Invoke-RestMethod -Method Delete -Uri "http://localhost:8080/api/playlists/1"
 ```
-3) Verify deletion in the browser (should return 404): http://localhost:8080/api/playlists/1
+3) Verify the deletion in the browser (should return 404): http://localhost:8080/api/playlists/1
