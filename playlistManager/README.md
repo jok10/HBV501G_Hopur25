@@ -19,7 +19,7 @@ Steps to perform in order to be able to verify the use cases (locally):
 ```
 2) Open in browser: http://localhost:8080/h2-console
 
-*H2 console login*  
+## *H2 console login*  
 **URL**: http://localhost:8080/h2-console  
 **JDBC URL**: jdbc:h2:mem:pmdb  
 **User**: sa  
