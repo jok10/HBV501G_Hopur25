@@ -1,11 +1,14 @@
 package is.hi.hbv501g.web;
 
-import is.hi.hbv501g.domain.Playlist;
-import is.hi.hbv501g.service.PlaylistService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import is.hi.hbv501g.domain.Playlist;
+import is.hi.hbv501g.service.PlaylistService;
 
 
 @RestController
@@ -15,14 +18,14 @@ public class PlaylistController {
 
     public PlaylistController(PlaylistService playlistService) { this.playlistService = playlistService; }
 
-    // Data transfer object
+    // Data transfer object for POST
     public static class CreatePlaylistRequest {
         public String name;
         public boolean isPublic;
         public String imageUrl;
     }
 
-    // Runs when a POST request is sent to /api/playlists/{id}
+    // Runs when a POST request is sent to /api/playlists/
     // Creates a new playlist using data from the request body
     @PostMapping
     public ResponseEntity<Playlist> create(@RequestBody CreatePlaylistRequest request) {
@@ -43,9 +46,26 @@ public class PlaylistController {
 
         if (optional.isPresent()) {
             return ResponseEntity.ok(optional.get());
-        }
-        else {
+        } else {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    // Fetches and lists all playlists (paginated)
+    @GetMapping
+    public Page<Playlist> list(@PageableDefault(size = 10) Pageable pageable) {         // 10 = default page size
+        return playlistService.list(pageable);
+    }
+
+    // Handles DELETE requests to /api/playlists/{id}
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        boolean deleted = playlistService.delete(id);
+
+        if (deleted) {
+            return ResponseEntity.noContent().build();          // 204
+        } else {
+            return ResponseEntity.notFound().build();           // 404
         }
     }
 }
