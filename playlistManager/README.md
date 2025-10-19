@@ -115,7 +115,21 @@ Expected JSON output:
 
 **Methods and Paths:** **GET** `/api/playlists/{id}`  
 **Verification:**
-1) "http://localhost:8080/api/playlists/1"
+1) Create a playlist (returns a JSON object with id: 1):
+
+```powershell
+$body = @{
+  name     = "Temporary Playlist"
+  isPublic = $true
+  imageUrl = $null
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:8080/api/playlists" `
+  -ContentType "application/json" `
+  -Body $body
+```
+2) Confirm the existence of the newly created playlist: http://localhost:8080/api/playlists/1
 
 - **List Playlists** (paginated listing)
 
