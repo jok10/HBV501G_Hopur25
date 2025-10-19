@@ -62,7 +62,7 @@ Searching returns matching tracks in the paginated form. Case-insensitive search
 
 *Supporting endpoints:*
 
-## - **List tracks** (paginated listing):
+- **List tracks** (paginated listing):
 
 **Methods and Paths:** **GET** `/api/tracks?page=0&size=10`  
 **Verification:**
@@ -111,7 +111,7 @@ Expected JSON output:
 
 *Supporting endpoints:*
 
-## - **Get playlist by id** (returns 404 if not found)
+- **Get playlist by id** (returns 404 if not found)
 
 **Methods and Paths:** **GET** `/api/playlists/{id}`  
 **Verification:**
@@ -131,7 +131,7 @@ Invoke-RestMethod -Method Post `
 ```
 2) Confirm the existence of the newly created playlist: http://localhost:8080/api/playlists/1
 
-## - **List Playlists** (paginated listing)
+- **List Playlists** (paginated listing)
 
 **Methods and Paths:** **GET** `/api/playlists`  
 **Verification:**
