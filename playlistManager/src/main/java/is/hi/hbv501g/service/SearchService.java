@@ -12,9 +12,7 @@ import is.hi.hbv501g.repository.TrackRepository;
 public class SearchService {
     private final TrackRepository tracks;
 
-    public SearchService(TrackRepository tracks) {
-        this.tracks = tracks;
-    }
+    public SearchService(TrackRepository tracks) { this.tracks = tracks; }
 
     public Page<Track> search(String s, Pageable pageable) {
         if (s == null || s.isBlank()) {
