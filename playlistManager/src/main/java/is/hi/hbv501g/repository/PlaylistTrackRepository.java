@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface PlaylistTrackRepository extends JpaRepository<PlaylistTrack, Long> {
-    int countByPlaylistId(Long playlistId);
-    List<PlaylistTrack> findByPlaylistIdOrderByIdAsc(Long playlistId);
+    int countByPlaylist_PlaylistId(Long playlistId);
+    List<PlaylistTrack> findByPlaylist_PlaylistIdOrderByPositionAsc(Long playlistId);
 }

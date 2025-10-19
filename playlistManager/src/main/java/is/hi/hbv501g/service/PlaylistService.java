@@ -5,44 +5,71 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
-import is.hi.hbv501g.domain.Playlist;
-import is.hi.hbv501g.repository.PlaylistRepository;
 
+import is.hi.hbv501g.domain.Playlist;
+import is.hi.hbv501g.domain.PlaylistTrack;
+import is.hi.hbv501g.domain.Track;
+import is.hi.hbv501g.repository.PlaylistRepository;
+import is.hi.hbv501g.repository.PlaylistTrackRepository;
+import is.hi.hbv501g.repository.TrackRepository;
 
 @Service
 public class PlaylistService {
     private final PlaylistRepository playlists;
+    private final TrackRepository tracks;
+    private final PlaylistTrackRepository playlistTracks;
 
-    public PlaylistService(PlaylistRepository playlists) { this.playlists = playlists; }
+    public PlaylistService(PlaylistRepository playlists,
+                           TrackRepository tracks,
+                           PlaylistTrackRepository playlistTracks) {
+        this.playlists = playlists;
+        this.tracks = tracks;
+        this.playlistTracks = playlistTracks;
+    }
 
     public Playlist create(String name, boolean isPublic, String imageUrl) {
         Playlist playlist = new Playlist();
-
         playlist.setName(name);
         playlist.setPublic(isPublic);
         playlist.setImageUrl(imageUrl);
         playlist.setCreatedAt(Instant.now());
-
         return playlists.save(playlist);
     }
 
-    public Optional<Playlist> get(Long id) {
-        return playlists.findById(id);          // Search the DB for a playlist with id as the primary key
+    public Optional<Playlist> get(Long id) { return playlists.findById(id); }
+
+    public Page<Playlist> list(Pageable pageable) { return playlists.findAll(pageable); }
+
+
+    public PlaylistTrack addTrack(Long playlistId, Long trackId) {
+        Playlist p = playlists.findById(playlistId)
+                .orElseThrow(() -> new IllegalArgumentException("Playlist not found: " + playlistId));
+        Track t = tracks.findById(trackId)
+                .orElseThrow(() -> new IllegalArgumentException("Track not found: " + trackId));
+
+        int nextPos = playlistTracks.countByPlaylist_PlaylistId(playlistId);
+
+        PlaylistTrack pt = new PlaylistTrack();
+        pt.setPlaylist(p);
+        pt.setTrack(t);
+        pt.setPosition(nextPos);
+        pt.setStartMs(0L);
+        pt.setEndMs(t.getDurationMs());
+
+        return playlistTracks.save(pt);
     }
 
-    public Page<Playlist> list(Pageable pageable) {
-        return playlists.findAll(pageable);
-    }
-
-    // Delete playlist
     public boolean delete(Long id) {
         if (playlists.existsById(id)) {
             playlists.deleteById(id);
-
             return true;
         }
-
         return false;
+    }
+
+    public List<PlaylistTrack> listTracks(Long playlistId) {
+        return playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId);
     }
 }
