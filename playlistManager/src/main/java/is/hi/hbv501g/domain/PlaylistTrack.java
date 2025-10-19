@@ -1,5 +1,6 @@
 package is.hi.hbv501g.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,10 +12,12 @@ public class PlaylistTrack {
 
     @ManyToOne
     @JoinColumn(name = "playlist_id", nullable = false)
+    @JsonIgnore
     private Playlist playlist;
 
     @ManyToOne
     @JoinColumn(name = "track_id", nullable = false)
+    @JsonIgnore
     private Track track;
 
     private int position;

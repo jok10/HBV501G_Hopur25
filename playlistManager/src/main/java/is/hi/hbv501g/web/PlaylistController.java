@@ -1,7 +1,11 @@
 package is.hi.hbv501g.web;
 
+import is.hi.hbv501g.domain.Playlist;
 import is.hi.hbv501g.domain.PlaylistTrack;
 import is.hi.hbv501g.service.PlaylistService;
+import is.hi.hbv501g.web.dto.PlaylistTrackResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,17 +22,51 @@ public class PlaylistController {
         this.playlistService = playlistService;
     }
 
+    // CREATE a playlist
+    @PostMapping
+    public ResponseEntity<Playlist> create(@RequestBody CreatePlaylistRequest req) {
+        Playlist p = playlistService.create(req.getName(), req.isPublic(), req.getImageUrl());
+        return ResponseEntity.created(URI.create("/api/playlists/" + p.getPlaylistId())).body(p);
+    }
+
+    @GetMapping
+    public Page<Playlist> list(Pageable pageable) {
+        return playlistService.list(pageable);
+    }
+
     @PostMapping("/{playlistId}/tracks")
-    public ResponseEntity<PlaylistTrack> addTrack(@PathVariable Long playlistId,
-                                                  @RequestParam Long trackId) {
+    public ResponseEntity<PlaylistTrackResponse> addTrack(@PathVariable Long playlistId,
+                                                          @RequestParam Long trackId) {
         PlaylistTrack pt = playlistService.addTrack(playlistId, trackId);
+
+        PlaylistTrackResponse dto = new PlaylistTrackResponse();
+        dto.setPlaylistTrackId(pt.getPlaylistTrackId());
+        dto.setPlaylistId(playlistId); // we already know it
+        dto.setTrackId(trackId);       // we already know it
+        dto.setPosition(pt.getPosition());
+        dto.setStartMs(pt.getStartMs());
+        dto.setEndMs(pt.getEndMs());
+
         return ResponseEntity
                 .created(URI.create("/api/playlists/" + playlistId + "/tracks/" + pt.getPlaylistTrackId()))
-                .body(pt);
+                .body(dto);
     }
 
     @GetMapping("/{playlistId}/tracks")
-    public List<PlaylistTrack> listTracks(@PathVariable Long playlistId) {
-        return playlistService.listTracks(playlistId);
+    public List<PlaylistTrackResponse> listTracks(@PathVariable Long playlistId) {
+        return playlistService.listTracksDTO(playlistId);
+    }
+
+    public static class CreatePlaylistRequest {
+        private String name;
+        private boolean isPublic;
+        private String imageUrl;
+
+        public String getName() { return name; }
+        public boolean isPublic() { return isPublic; }
+        public String getImageUrl() { return imageUrl; }
+        public void setName(String name) { this.name = name; }
+        public void setPublic(boolean aPublic) { isPublic = aPublic; }
+        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     }
 }
