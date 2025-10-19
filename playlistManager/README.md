@@ -17,13 +17,13 @@ Steps to perform in order to be able to verify the use cases (locally):
 ```bash
 ./mvnw spring-boot:run
 ```
-2) Open in the browser: http://localhost:8080/h2-console
+2) Open in browser: http://localhost:8080/h2-console
 
 H2 console login
-URL: http://localhost:8080/h2-console  
-JDBC URL: jdbc:h2:mem:pmdb  
-User: sa  
-Password: (none)  
+**URL**: http://localhost:8080/h2-console  
+**JDBC URL**: jdbc:h2:mem:pmdb  
+**User**: sa  
+**Password**: (none)  
 
 Optional SQL track check:
 ```sql
@@ -32,7 +32,7 @@ SELECT * FROM TRACKS ORDER BY TRACK_ID;
 
 ---
 
-**Verified Use Cases (UC)**
+## **Verified Use Cases (UC)**
 *(as of 19 Oct 2025)*
 
 
@@ -53,10 +53,10 @@ Searching returns matching tracks in the paginated form. Case-insensitive search
 
 **Methods and Paths:** **GET** `/api/tracks/search?query=dark&page=0&size=5`  
 **Verification:**
-1) Open in browser http://localhost:8080/api/tracks/search?query=dark&page=0&size=5, where:
-`query=` is the search term that matches track data,
-`page=` is the page number,
-`size=` is the number of entries per page.
+1) Open in browser http://localhost:8080/api/tracks/search?query=dark&page=0&size=5, where:  
+`query=` is the search term that matches track data,  
+`page=` is the page number,  
+`size=` is the number of entries per page.  
 2) The result of the query is a JSON response showing matching tracks.
 
 
@@ -66,9 +66,9 @@ Searching returns matching tracks in the paginated form. Case-insensitive search
 
 **Methods and Paths:** **GET** `/api/tracks?page=0&size=10`  
 **Verification:**
-1) Open in browser http://localhost:8080/api/tracks?page=0&size=10, where:
-`page=` is the page number,
-`size=` is the number of entries per page.
+1) Open in browser http://localhost:8080/api/tracks?page=0&size=10, where:  
+`page=` is the page number,  
+`size=` is the number of entries per page.  
 
 
 
@@ -121,9 +121,9 @@ Expected JSON output:
 
 **Methods and Paths:** **GET** `/api/playlists`  
 **Verification:**
-1) Open in browser http://localhost:8080/api/playlists?page=0&size=10, where:
-`page=` is the page number,
-`size=` is the number of entries per page.
+1) Open in browser http://localhost:8080/api/playlists?page=0&size=10, where:  
+`page=` is the page number,  
+`size=` is the number of entries per page.  
 
 
 
