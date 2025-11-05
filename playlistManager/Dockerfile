@@ -3,9 +3,9 @@ FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
 # copy only the files needed to resolve deps first (better layer caching)
-COPY playlistManager/pom.xml .
-COPY playlistManager/.mvn .mvn
-COPY playlistManager/mvnw ./
+COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw ./
 RUN chmod +x mvnw && ./mvnw -q -DskipTests dependency:go-offline
 
 # now copy sources and build
