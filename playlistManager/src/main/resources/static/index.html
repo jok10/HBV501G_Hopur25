@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Playlist Manager - Audio Demo</title>
+</head>
+<body>
+<h1>Tracks</h1>
+<div id="tracks"></div>
+
+<script>
+    fetch("/api/tracks?page=0&size=10")
+        .then(res => res.json())
+        .then(data => {
+            const div = document.getElementById("tracks");
+            data.content.forEach(t => {
+                div.innerHTML += `
+            <div>
+              <strong>${t.title}</strong> by ${t.artist} <br>
+              <audio controls src="/api/tracks/${t.trackId}/stream"></audio>
+              <hr>
+            </div>
+          `;
+            });
+        });
+</script>
+</body>
+</html>

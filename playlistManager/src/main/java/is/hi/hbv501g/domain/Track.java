@@ -18,6 +18,10 @@ public class Track {
     private String album;
     private long durationMs;
 
+    //Url for actual audio file
+    private String fileUrl;
+    private String mimeType; //mpeg,ogg,...
+
     public Track() {}
 
     // Getters
@@ -26,6 +30,8 @@ public class Track {
     public String getArtist() { return artist; }
     public String getAlbum() { return album; }
     public long getDurationMs() { return durationMs; }
+    public String getFileUrl() { return fileUrl; }
+    public String getMimeType() { return mimeType; }
 
     // Setters
     public void setTrackId(Long trackId) { this.trackId = trackId; }
@@ -33,4 +39,6 @@ public class Track {
     public void setArtist(String artist) { this.artist = artist; }
     public void setAlbum(String album) {this.album = album; }
     public void setDurationMs(long durationMs) { this.durationMs = durationMs; }
+    public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
+    public void setMimeType(String mimeType) { this.mimeType = mimeType; }
 }
