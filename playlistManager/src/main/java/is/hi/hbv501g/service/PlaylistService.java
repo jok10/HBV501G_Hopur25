@@ -32,6 +32,7 @@ public class PlaylistService {
         this.playlistTracks = playlistTracks;
     }
 
+    // CREATE playlist
     public Playlist create(String name, boolean isPublic, String imageUrl) {
         Playlist playlist = new Playlist();
         playlist.setName(name);
@@ -41,22 +42,17 @@ public class PlaylistService {
         return playlists.save(playlist);
     }
 
+    // GET playlist by id
     public Optional<Playlist> get(Long id) {
         return playlists.findById(id);
     }
 
+    // LIST playlists (paginated)
     public Page<Playlist> list(Pageable pageable) {
         return playlists.findAll(pageable);
     }
 
-    public boolean delete(Long id) {
-        if (playlists.existsById(id)) {
-            playlists.deleteById(id);
-            return true;
-        }
-        return false;
-    }
-
+    // ADD track to playlist
     public PlaylistTrack addTrack(Long playlistId, Long trackId) {
         Playlist p = playlists.findById(playlistId)
                 .orElseThrow(() -> new IllegalArgumentException("Playlist not found: " + playlistId));
@@ -74,6 +70,7 @@ public class PlaylistService {
         return playlistTracks.save(pt);
     }
 
+    // LIST tracks in laylist as DTOs
     @Transactional(readOnly = true)
     public List<PlaylistTrackResponse> listTracksDTO(Long playlistId) {
         return playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId)
@@ -94,5 +91,25 @@ public class PlaylistService {
     @Transactional(readOnly = true)
     public List<PlaylistTrack> listTracks(Long playlistId) {
         return playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId);
+    }
+
+    // DELETE playlist
+    public boolean deletePlaylist(Long playlistId) {
+        if (playlists.existsById(playlistId)) {
+            playlists.deleteById(playlistId);
+
+            return true;
+        }
+        return false;
+    }
+
+    // DELETE track from playlist
+    @Transactional
+    public boolean deleteTrack(Long playlistTrackId) {
+        if (!playlistTracks.existsById(playlistTrackId)) {
+            return false;
+        }
+        playlistTracks.deleteById(playlistTrackId);
+        return true;
     }
 }

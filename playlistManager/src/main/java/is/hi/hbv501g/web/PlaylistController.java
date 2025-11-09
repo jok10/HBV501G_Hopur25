@@ -62,11 +62,52 @@ public class PlaylistController {
         private boolean isPublic;
         private String imageUrl;
 
-        public String getName() { return name; }
-        public boolean isPublic() { return isPublic; }
-        public String getImageUrl() { return imageUrl; }
-        public void setName(String name) { this.name = name; }
-        public void setPublic(boolean aPublic) { isPublic = aPublic; }
-        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+        public String getName() {
+            return name;
+        }
+
+        public boolean isPublic() {
+            return isPublic;
+        }
+
+        public String getImageUrl() {
+            return imageUrl;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public void setPublic(boolean aPublic) {
+            isPublic = aPublic;
+        }
+
+        public void setImageUrl(String imageUrl) {
+            this.imageUrl = imageUrl;
+        }
+    }
+
+    // DELETE /api/playlists/{playlistId}
+    @DeleteMapping("/{playlistId}")
+    public ResponseEntity<Void> deletePlaylist(@PathVariable Long playlistId) {
+        boolean deleted = playlistService.deletePlaylist(playlistId);
+
+        if (deleted) {
+            return ResponseEntity.noContent().build();          // 204
+        } else {
+            return ResponseEntity.notFound().build();           // 404
+        }
+    }
+
+    // DELETE /api/playlists/{playlistId}/tracks/{playlistTrackId}
+    @DeleteMapping("/{playlistId}/tracks/{playlistTrackId}")
+    public ResponseEntity<Void> deleteTrack(@PathVariable Long playlistId, @PathVariable Long playlistTrackId) {
+        boolean deleted = playlistService.deleteTrack(playlistTrackId);
+
+        if (deleted) {
+            return ResponseEntity.noContent().build();          // 204
+        } else {
+            return ResponseEntity.notFound().build();           // 404
+        }
     }
 }
