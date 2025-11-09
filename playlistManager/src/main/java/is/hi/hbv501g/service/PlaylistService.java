@@ -16,9 +16,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+
 @Service
 @Transactional
 public class PlaylistService {
+    private  static final int POSITION_DECREMENT = 1;
 
     private final PlaylistRepository playlists;
     private final TrackRepository tracks;
@@ -32,6 +34,7 @@ public class PlaylistService {
         this.playlistTracks = playlistTracks;
     }
 
+    // CREATE playlist
     public Playlist create(String name, boolean isPublic, String imageUrl) {
         Playlist playlist = new Playlist();
         playlist.setName(name);
@@ -41,22 +44,17 @@ public class PlaylistService {
         return playlists.save(playlist);
     }
 
+    // GET playlist by id
     public Optional<Playlist> get(Long id) {
         return playlists.findById(id);
     }
 
+    // LIST playlists (paginated)
     public Page<Playlist> list(Pageable pageable) {
         return playlists.findAll(pageable);
     }
 
-    public boolean delete(Long id) {
-        if (playlists.existsById(id)) {
-            playlists.deleteById(id);
-            return true;
-        }
-        return false;
-    }
-
+    // ADD track to playlist
     public PlaylistTrack addTrack(Long playlistId, Long trackId) {
         Playlist p = playlists.findById(playlistId)
                 .orElseThrow(() -> new IllegalArgumentException("Playlist not found: " + playlistId));
@@ -74,6 +72,7 @@ public class PlaylistService {
         return playlistTracks.save(pt);
     }
 
+    // LIST tracks in laylist as DTOs
     @Transactional(readOnly = true)
     public List<PlaylistTrackResponse> listTracksDTO(Long playlistId) {
         return playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId)
@@ -94,5 +93,129 @@ public class PlaylistService {
     @Transactional(readOnly = true)
     public List<PlaylistTrack> listTracks(Long playlistId) {
         return playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId);
+    }
+
+    // DELETE playlist
+    public boolean deletePlaylist(Long playlistId) {
+        if (playlists.existsById(playlistId)) {
+            playlists.deleteById(playlistId);
+
+            return true;
+        }
+        return false;
+    }
+
+    // DELETE track from playlist
+    @Transactional
+    public boolean deleteTrack(Long playlistId, Long playlistTrackId) {
+        Optional<PlaylistTrack> optional = playlistTracks.findById(playlistTrackId);
+
+        if (!optional.isPresent()) {
+            return false;
+        }
+
+        PlaylistTrack playlistTrack = optional.get();
+
+        // Make sure the playlist we are deleting from is correct
+        if (!playlistTrack.getPlaylist().getPlaylistId().equals(playlistId)) {
+            return false;
+        }
+
+        int removedPosition = playlistTrack.getPosition();
+        playlistTracks.delete(playlistTrack);
+
+        // Reorder the remaining tracks
+        List<PlaylistTrack> remainingTracks = playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId);
+
+        for (PlaylistTrack track : remainingTracks) {
+            if (track.getPosition() > removedPosition) {
+                track.setPosition(track.getPosition() - POSITION_DECREMENT);
+                playlistTracks.save(track);
+            }
+        }
+
+        return true;
+    }
+
+    // COPY playlist
+    public Playlist copyPlaylist(Long sourcePlaylistId) {
+        Optional<Playlist> optional = playlists.findById(sourcePlaylistId);
+
+        if (!optional.isPresent()) {
+            throw new IllegalArgumentException("Source playlist " + sourcePlaylistId + " not found.");
+        }
+
+        Playlist sourcePlaylist = optional.get();
+
+        if (!sourcePlaylist.isPublic()) {
+            throw new IllegalStateException("The selected playlist is private and cannot be saved");
+        }
+
+        // CREATE a new playlist
+        Playlist copiedPlaylist = new Playlist();
+
+        copiedPlaylist.setName(sourcePlaylist.getName());
+        copiedPlaylist.setPublic(false);
+        copiedPlaylist.setImageUrl(sourcePlaylist.getImageUrl());
+        copiedPlaylist.setCreatedAt(Instant.now());
+
+        playlists.save(copiedPlaylist);
+
+        // Copy all tracks from the source playlist
+        List<PlaylistTrack> sourceTracks = playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(sourcePlaylist.getPlaylistId());
+
+        for (PlaylistTrack sourceTrack : sourceTracks) {
+            PlaylistTrack newPlaylistTrack = new PlaylistTrack();
+
+            newPlaylistTrack.setPlaylist(copiedPlaylist);
+            newPlaylistTrack.setTrack(sourceTrack.getTrack());
+            newPlaylistTrack.setPosition(sourceTrack.getPosition());
+            newPlaylistTrack.setStartMs(sourceTrack.getStartMs());
+            newPlaylistTrack.setEndMs(sourceTrack.getEndMs());
+
+            playlistTracks.save(newPlaylistTrack);
+        }
+
+        return copiedPlaylist;
+    }
+
+    // UPDATE start/end markers for a track in a playlist
+    @Transactional
+    public PlaylistTrackResponse updateTrackMarkers(Long playlistId, Long playlistTrackId, Long startMs, Long endMs) {
+        Optional<PlaylistTrack> optional = playlistTracks.findById(playlistTrackId);
+
+        if (!optional.isPresent()) {
+            throw new IllegalArgumentException("Track " + playlistTrackId + " not found.");
+        }
+
+        PlaylistTrack playlistTrack = optional.get();
+
+        if (!playlistTrack.getPlaylist().getPlaylistId().equals(playlistId)) {
+            throw new IllegalArgumentException("Track " + playlistTrackId + " not in this playlist.");
+        }
+
+        long duration = playlistTrack.getTrack().getDurationMs();
+        long defaultStart = (startMs != null) ? startMs : 0L;
+        long defaultEnd = (endMs != null) ? endMs : duration;
+
+        if (defaultStart < 0 || defaultEnd <= defaultStart || defaultEnd > duration) {
+            throw new IllegalArgumentException("Invalid marker values.");
+        }
+
+        playlistTrack.setStartMs(defaultStart);
+        playlistTrack.setEndMs(defaultEnd);
+        playlistTracks.save(playlistTrack);
+
+        // DTO to return
+        PlaylistTrackResponse dto = new PlaylistTrackResponse();
+
+        dto.setPlaylistTrackId(playlistTrack.getPlaylistTrackId());
+        dto.setPlaylistId(playlistTrack.getPlaylist().getPlaylistId());
+        dto.setTrackId(playlistTrack.getTrack().getTrackId());
+        dto.setPosition(playlistTrack.getPosition());
+        dto.setStartMs(playlistTrack.getStartMs());
+        dto.setEndMs(playlistTrack.getEndMs());
+
+        return dto;
     }
 }

@@ -1,5 +1,8 @@
 package is.hi.hbv501g.web.dto;
 
+import is.hi.hbv501g.domain.Track;
+
+
 public class PlaylistTrackResponse {
     private Long playlistTrackId;
     private Long playlistId;
@@ -7,6 +10,8 @@ public class PlaylistTrackResponse {
     private int position;
     private long startMs;
     private long endMs;
+
+    private Track track;
 
     public Long getPlaylistTrackId() { return playlistTrackId; }
     public void setPlaylistTrackId(Long playlistTrackId) { this.playlistTrackId = playlistTrackId; }
