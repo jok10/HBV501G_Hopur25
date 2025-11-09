@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/playlists")
@@ -108,6 +109,43 @@ public class PlaylistController {
             return ResponseEntity.noContent().build();          // 204
         } else {
             return ResponseEntity.notFound().build();           // 404
+        }
+    }
+
+    // GET /api/playlists/{playlistId}/share
+    @GetMapping("/{playlistId}/share")
+    public ResponseEntity<String> sharePlaylist(@PathVariable Long playlistId) {
+        Optional<Playlist> optional = playlistService.get(playlistId);
+
+        // If not found
+        if (!optional.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Playlist playlist = optional.get();
+
+        // If private
+        if (!playlist.isPublic()) {
+            return ResponseEntity.status(403).body("This playlist is private.");
+        }
+
+        // If public
+        String playlistLink = "http://localhost:8080/api/playlists/" + playlistId;
+
+        return ResponseEntity.ok(playlistLink);
+    }
+
+    // POST /api/playlists/{playlistId}/copy
+    @PostMapping("/{playlistId}/copy")
+    public ResponseEntity<Playlist> copyPlaylist(@PathVariable Long playlistId) {
+        try {
+            Playlist copiedPlaylist = playlistService.copyPlaylist(playlistId);
+
+            return ResponseEntity.created(URI.create("/api/playlists/" + copiedPlaylist.getPlaylistId())).body(copiedPlaylist);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();           // playlist not found
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(403).build();          // private playlist
         }
     }
 }

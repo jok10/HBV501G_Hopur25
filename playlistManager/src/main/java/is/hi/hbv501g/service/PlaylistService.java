@@ -112,4 +112,46 @@ public class PlaylistService {
         playlistTracks.deleteById(playlistTrackId);
         return true;
     }
+
+    // COPY playlist
+    public Playlist copyPlaylist(Long sourcePlaylistId) {
+        Optional<Playlist> optional = playlists.findById(sourcePlaylistId);
+
+        if (!optional.isPresent()) {
+            throw new IllegalArgumentException("Source playlist " + sourcePlaylistId + " not found.");
+        }
+
+        Playlist sourcePlaylist = optional.get();
+
+        if (!sourcePlaylist.isPublic()) {
+            throw new IllegalStateException("The selected playlist is private and cannot be saved");
+        }
+
+        // CREATE a new playlist
+        Playlist copiedPlaylist = new Playlist();
+
+        copiedPlaylist.setName(sourcePlaylist.getName());
+        copiedPlaylist.setPublic(false);
+        copiedPlaylist.setImageUrl(sourcePlaylist.getImageUrl());
+        copiedPlaylist.setCreatedAt(Instant.now());
+
+        playlists.save(copiedPlaylist);
+
+        // Copy all tracks from the source playlist
+        List<PlaylistTrack> sourceTracks = playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(sourcePlaylist.getPlaylistId());
+
+        for (PlaylistTrack sourceTrack : sourceTracks) {
+            PlaylistTrack newPlaylistTrack = new PlaylistTrack();
+
+            newPlaylistTrack.setPlaylist(copiedPlaylist);
+            newPlaylistTrack.setTrack(sourceTrack.getTrack());
+            newPlaylistTrack.setPosition(sourceTrack.getPosition());
+            newPlaylistTrack.setStartMs(sourceTrack.getStartMs());
+            newPlaylistTrack.setEndMs(sourceTrack.getEndMs());
+
+            playlistTracks.save(newPlaylistTrack);
+        }
+
+        return copiedPlaylist;
+    }
 }
