@@ -1,10 +1,6 @@
 package is.hi.hbv501g.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.time.Instant;
 
@@ -19,10 +15,15 @@ public class Playlist {
     private boolean isPublic;
     private String imageUrl;
     private Instant createdAt;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User owner;
+
 
     public Playlist() {}
 
     // Getters
+    public User getOwner() { return owner; }
     public Long getPlaylistId() { return playlistId; }
     public String getName() { return name; }
     public boolean isPublic() { return isPublic; }
@@ -35,4 +36,5 @@ public class Playlist {
     public void setPublic(boolean aPublic) { isPublic = aPublic; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public void setOwner(User owner) { this.owner = owner; }
 }

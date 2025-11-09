@@ -3,6 +3,7 @@ package is.hi.hbv501g.service;
 import is.hi.hbv501g.domain.Playlist;
 import is.hi.hbv501g.domain.PlaylistTrack;
 import is.hi.hbv501g.domain.Track;
+import is.hi.hbv501g.domain.User;
 import is.hi.hbv501g.repository.PlaylistRepository;
 import is.hi.hbv501g.repository.PlaylistTrackRepository;
 import is.hi.hbv501g.repository.TrackRepository;
@@ -35,7 +36,7 @@ public class PlaylistService {
     }
 
     // CREATE playlist
-    public Playlist create(String name, boolean isPublic, String imageUrl) {
+    public Playlist create(String name, boolean isPublic, String imageUrl, User owner) {
         Playlist playlist = new Playlist();
         playlist.setName(name);
         playlist.setPublic(isPublic);
