@@ -103,7 +103,7 @@ public class PlaylistController {
     // DELETE /api/playlists/{playlistId}/tracks/{playlistTrackId}
     @DeleteMapping("/{playlistId}/tracks/{playlistTrackId}")
     public ResponseEntity<Void> deleteTrack(@PathVariable Long playlistId, @PathVariable Long playlistTrackId) {
-        boolean deleted = playlistService.deleteTrack(playlistTrackId);
+        boolean deleted = playlistService.deleteTrack(playlistId, playlistTrackId);
 
         if (deleted) {
             return ResponseEntity.noContent().build();          // 204

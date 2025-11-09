@@ -19,6 +19,7 @@ import java.util.Optional;
 @Service
 @Transactional
 public class PlaylistService {
+    private  static final int POSITION_DECREMENT = 1;
 
     private final PlaylistRepository playlists;
     private final TrackRepository tracks;
@@ -105,11 +106,33 @@ public class PlaylistService {
 
     // DELETE track from playlist
     @Transactional
-    public boolean deleteTrack(Long playlistTrackId) {
-        if (!playlistTracks.existsById(playlistTrackId)) {
+    public boolean deleteTrack(Long playlistId, Long playlistTrackId) {
+        Optional<PlaylistTrack> optional = playlistTracks.findById(playlistTrackId);
+
+        if (!optional.isPresent()) {
             return false;
         }
-        playlistTracks.deleteById(playlistTrackId);
+
+        PlaylistTrack playlistTrack = optional.get();
+
+        // Make sure the playlist we are deleting from is correct
+        if (!playlistTrack.getPlaylist().getPlaylistId().equals(playlistId)) {
+            return false;
+        }
+
+        int removedPosition = playlistTrack.getPosition();
+        playlistTracks.delete(playlistTrack);
+
+        // Reorder the remaining tracks
+        List<PlaylistTrack> remainingTracks = playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId);
+
+        for (PlaylistTrack track : remainingTracks) {
+            if (track.getPosition() > removedPosition) {
+                track.setPosition(track.getPosition() - POSITION_DECREMENT);
+                playlistTracks.save(track);
+            }
+        }
+
         return true;
     }
 
