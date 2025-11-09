@@ -57,6 +57,31 @@ public class PlaylistController {
         return playlistService.listTracksDTO(playlistId);
     }
 
+    // VIEW a playlist (metadata)
+    @GetMapping("/{playlistId}")
+    public ResponseEntity<Playlist> get(@PathVariable Long playlistId) {
+        return playlistService.get(playlistId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // DELETE a playlist
+    @DeleteMapping("/{playlistId}")
+    public ResponseEntity<Void> delete(@PathVariable Long playlistId) {
+        boolean deleted = playlistService.delete(playlistId);
+        return deleted ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+    // GET /api/playlists/{id}
+    @GetMapping("/{id}")
+    public ResponseEntity<Playlist> getPlaylist(@PathVariable Long id) {
+        return playlistService.get(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+
+
     public static class CreatePlaylistRequest {
         private String name;
         private boolean isPublic;
