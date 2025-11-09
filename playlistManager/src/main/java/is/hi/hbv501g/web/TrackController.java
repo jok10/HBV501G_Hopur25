@@ -34,6 +34,9 @@ public class TrackController {
     @PostMapping
     public ResponseEntity<Track> create(@RequestBody CreateTrackRequest req) {
         Track t = trackService.create(req.getTitle(), req.getArtist(), req.getAlbum(), req.getDurationMs());
+        t.setFileUrl(req.getFileUrl());
+        t.setMimeType(req.getMimeType());
+        t = trackRepository.save(t);
         return ResponseEntity.created(URI.create("/api/tracks/" + t.getTrackId())).body(t);
     }
 
