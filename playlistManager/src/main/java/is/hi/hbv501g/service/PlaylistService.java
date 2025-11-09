@@ -177,4 +177,44 @@ public class PlaylistService {
 
         return copiedPlaylist;
     }
+
+    // UPDATE start/end markers for a track in a playlist
+    @Transactional
+    public PlaylistTrackResponse updateTrackMarkers(Long playlistId, Long playlistTrackId, Long startMs, Long endMs) {
+        Optional<PlaylistTrack> optional = playlistTracks.findById(playlistTrackId);
+
+        if (!optional.isPresent()) {
+            throw new IllegalArgumentException("Track " + playlistTrackId + " not found.");
+        }
+
+        PlaylistTrack playlistTrack = optional.get();
+
+        if (!playlistTrack.getPlaylist().getPlaylistId().equals(playlistId)) {
+            throw new IllegalArgumentException("Track " + playlistTrackId + " not in this playlist.");
+        }
+
+        long duration = playlistTrack.getTrack().getDurationMs();
+        long defaultStart = (startMs != null) ? startMs : 0L;
+        long defaultEnd = (endMs != null) ? endMs : duration;
+
+        if (defaultStart < 0 || defaultEnd <= defaultStart || defaultEnd > duration) {
+            throw new IllegalArgumentException("Invalid marker values.");
+        }
+
+        playlistTrack.setStartMs(defaultStart);
+        playlistTrack.setEndMs(defaultEnd);
+        playlistTracks.save(playlistTrack);
+
+        // DTO to return
+        PlaylistTrackResponse dto = new PlaylistTrackResponse();
+
+        dto.setPlaylistTrackId(playlistTrack.getPlaylistTrackId());
+        dto.setPlaylistId(playlistTrack.getPlaylist().getPlaylistId());
+        dto.setTrackId(playlistTrack.getTrack().getTrackId());
+        dto.setPosition(playlistTrack.getPosition());
+        dto.setStartMs(playlistTrack.getStartMs());
+        dto.setEndMs(playlistTrack.getEndMs());
+
+        return dto;
+    }
 }

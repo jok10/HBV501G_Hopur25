@@ -4,6 +4,7 @@ import is.hi.hbv501g.domain.Playlist;
 import is.hi.hbv501g.domain.PlaylistTrack;
 import is.hi.hbv501g.service.PlaylistService;
 import is.hi.hbv501g.web.dto.PlaylistTrackResponse;
+import is.hi.hbv501g.web.dto.UpdateMarkersRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -88,10 +89,10 @@ public class PlaylistController {
         }
     }
 
-    // DELETE /api/playlists/{playlistId}
-    @DeleteMapping("/{playlistId}")
-    public ResponseEntity<Void> deletePlaylist(@PathVariable Long playlistId) {
-        boolean deleted = playlistService.deletePlaylist(playlistId);
+    // DELETE /api/playlists/{playlistId}/tracks/{playlistTrackId}
+    @DeleteMapping("/{playlistId}/tracks/{playlistTrackId}")
+    public ResponseEntity<Void> deleteTrack(@PathVariable Long playlistId, @PathVariable Long playlistTrackId) {
+        boolean deleted = playlistService.deleteTrack(playlistId, playlistTrackId);
 
         if (deleted) {
             return ResponseEntity.noContent().build();          // 204
@@ -100,10 +101,29 @@ public class PlaylistController {
         }
     }
 
-    // DELETE /api/playlists/{playlistId}/tracks/{playlistTrackId}
-    @DeleteMapping("/{playlistId}/tracks/{playlistTrackId}")
-    public ResponseEntity<Void> deleteTrack(@PathVariable Long playlistId, @PathVariable Long playlistTrackId) {
-        boolean deleted = playlistService.deleteTrack(playlistId, playlistTrackId);
+    // UPDATE markers for a track in a playlist
+    // PUT /api/playlists/{playlistId}/tracks/{playlistTrackId}/markers
+    @PutMapping("/{playlistId}/tracks/{playlistTrackId}/markers")
+    public ResponseEntity<PlaylistTrackResponse> updateMarkers(
+            @PathVariable Long playlistId,
+            @PathVariable Long playlistTrackId,
+            @RequestBody UpdateMarkersRequest request) {
+
+        try {
+            PlaylistTrackResponse dto = playlistService.updateTrackMarkers(playlistId, playlistTrackId, request.getStartMs(), request.getEndMs());
+
+            return ResponseEntity.ok(dto);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
+    // DELETE /api/playlists/{playlistId}
+    @DeleteMapping("/{playlistId}")
+    public ResponseEntity<Void> deletePlaylist(@PathVariable Long playlistId) {
+        boolean deleted = playlistService.deletePlaylist(playlistId);
 
         if (deleted) {
             return ResponseEntity.noContent().build();          // 204
@@ -142,10 +162,13 @@ public class PlaylistController {
             Playlist copiedPlaylist = playlistService.copyPlaylist(playlistId);
 
             return ResponseEntity.created(URI.create("/api/playlists/" + copiedPlaylist.getPlaylistId())).body(copiedPlaylist);
+
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();           // playlist not found
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).build();          // private playlist
         }
     }
+
+
 }
