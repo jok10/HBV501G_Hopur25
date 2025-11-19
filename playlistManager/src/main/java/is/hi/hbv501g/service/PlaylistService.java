@@ -42,7 +42,13 @@ public class PlaylistService {
         playlist.setPublic(isPublic);
         playlist.setImageUrl(imageUrl);
         playlist.setCreatedAt(Instant.now());
+        playlist.setOwner(owner); // IMPORTANT
         return playlists.save(playlist);
+    }
+
+    // list all playlists for a given owner
+    public List<Playlist> listByOwner(User owner) {
+        return playlists.findByOwner(owner);
     }
 
     // GET playlist by id

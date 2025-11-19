@@ -5,24 +5,186 @@
     <title>Playlist Manager - Audio Demo</title>
 </head>
 <body>
-<h1>Tracks</h1>
-<div id="tracks"></div>
+<h1>Playlist Manager</h1>
+
+<section id="auth">
+    <h2>Register</h2>
+    <form id="registerForm">
+        <input name="username" placeholder="Username" required>
+        <input name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Register</button>
+    </form>
+
+    <h2>Login</h2>
+    <form id="loginForm">
+        <input name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+
+    <button id="logoutBtn" style="display:none">Logout</button>
+    <p id="currentUser"></p>
+</section>
+
+<hr>
+
+<section id="playlists">
+    <h2>Create Playlist</h2>
+    <form id="playlistForm">
+        <input name="name" placeholder="Playlist name" required>
+        <label>
+            <input type="checkbox" name="isPublic">
+            Public
+        </label>
+        <input name="imageUrl" placeholder="Image URL (optional)">
+        <button type="submit">Create</button>
+    </form>
+
+    <h3>My Playlists</h3>
+    <ul id="myPlaylists"></ul>
+</section>
+
+<hr>
+
+<section id="tracksSection">
+    <h2>Tracks (sample)</h2>
+    <div id="tracks"></div>
+</section>
 
 <script>
-    fetch("/api/tracks?page=0&size=10")
-        .then(res => res.json())
-        .then(data => {
-            const div = document.getElementById("tracks");
-            data.content.forEach(t => {
-                div.innerHTML += `
-            <div>
-              <strong>${t.title}</strong> by ${t.artist} <br>
-              <audio controls src="/api/tracks/${t.trackId}/stream"></audio>
-              <hr>
-            </div>
-          `;
-            });
+    let currentUser = null;
+
+    function updateAuthUI() {
+        const userP = document.getElementById("currentUser");
+        const logoutBtn = document.getElementById("logoutBtn");
+        if (currentUser) {
+            userP.textContent = "Logged in as: " + currentUser.username;
+            logoutBtn.style.display = "inline-block";
+        } else {
+            userP.textContent = "Not logged in";
+            logoutBtn.style.display = "none";
+        }
+    }
+
+    // --------- Register ----------
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target).entries());
+        const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
         });
+        if (res.ok) {
+            alert("Registered successfully. You can now log in.");
+            e.target.reset();
+        } else {
+            alert("Registration failed");
+        }
+    });
+
+    // --------- Login ----------
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target).entries());
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            currentUser = await res.json();
+            updateAuthUI();
+            loadMyPlaylists();
+        } else {
+            alert("Login failed");
+        }
+    });
+
+    // --------- Logout ----------
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+        await fetch("/api/auth/logout", { method: "POST" });
+        currentUser = null;
+        updateAuthUI();
+        document.getElementById("myPlaylists").innerHTML = "";
+    });
+
+    // --------- Create playlist ----------
+    document.getElementById("playlistForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!currentUser) {
+            alert("You must be logged in to create a playlist.");
+            return;
+        }
+        const formData = new FormData(e.target);
+        const payload = {
+            name: formData.get("name"),
+            isPublic: formData.get("isPublic") === "on",
+            imageUrl: formData.get("imageUrl") || null
+        };
+
+        const res = await fetch("/api/playlists", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            e.target.reset();
+            loadMyPlaylists();
+        } else if (res.status === 401) {
+            alert("Not logged in.");
+        } else {
+            alert("Failed to create playlist");
+        }
+    });
+
+    // --------- Load my playlists ----------
+    async function loadMyPlaylists() {
+        const ul = document.getElementById("myPlaylists");
+        ul.innerHTML = "";
+        const res = await fetch("/api/playlists/mine");
+        if (!res.ok) {
+            return;
+        }
+        const playlists = await res.json();
+        playlists.forEach(p => {
+            const li = document.createElement("li");
+            li.textContent = `#${p.playlistId} - ${p.name} ${p.public ? "(public)" : ""}`;
+            ul.appendChild(li);
+        });
+    }
+
+    // --------- Load sample tracks (unchanged) ----------
+    async function loadTracks() {
+        const res = await fetch("/api/tracks?page=0&size=10");
+        const data = await res.json();
+        const div = document.getElementById("tracks");
+        div.innerHTML = "";
+        data.content.forEach(t => {
+            div.innerHTML += `
+                <div>
+                  <strong>${t.title}</strong> by ${t.artist} <br>
+                  <audio controls src="/api/tracks/${t.trackId}/stream"></audio>
+                  <hr>
+                </div>
+            `;
+        });
+    }
+
+    // On load: try to fetch current user (if session exists) and load data
+    (async function init() {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+            currentUser = await res.json();
+        }
+        updateAuthUI();
+        if (currentUser) {
+            loadMyPlaylists();
+        }
+        loadTracks();
+    })();
 </script>
 </body>
 </html>

@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+consolidate.sh
+consolidated_contents.txt

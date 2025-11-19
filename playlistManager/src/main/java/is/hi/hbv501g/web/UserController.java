@@ -1,47 +1,36 @@
 package is.hi.hbv501g.web;
 
-import is.hi.hbv501g.domain.Playlist;
 import is.hi.hbv501g.domain.User;
-import is.hi.hbv501g.repository.PlaylistRepository;
-import is.hi.hbv501g.repository.UserRepository;
+import is.hi.hbv501g.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService users;
 
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserController(UserService users) {
+        this.users = users;
     }
 
-    @PostMapping
-    public ResponseEntity<User> create(@RequestBody User user) {
-        User saved = userRepository.save(user);
-        return ResponseEntity.created(URI.create("/api/users/" + saved.getUserId())).body(saved);
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        users.register(user);
+        return ResponseEntity.created(URI.create("/api/users/" + user.getUserId()))
+                .body(Map.of("status", "registered"));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/{id}/playlists")
-    public ResponseEntity<List<Playlist>> getUserPlaylists(@PathVariable Long id) {
-        Optional<User> userOpt = userRepository.findById(id);
-        if (!userOpt.isPresent()) {
-            return ResponseEntity.notFound().build();
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+        String token = users.authenticate(body.get("username"), body.get("password"));
+        if (token == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
         }
-        List<Playlist> playlists = PlaylistRepository.findByOwner(userOpt.get());
-        return ResponseEntity.ok(playlists);
+        return ResponseEntity.ok(Map.of("token", token));
     }
-
 }

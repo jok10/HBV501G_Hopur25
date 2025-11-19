@@ -3,12 +3,14 @@ package is.hi.hbv501g.web;
 import is.hi.hbv501g.domain.Playlist;
 import is.hi.hbv501g.domain.PlaylistTrack;
 import is.hi.hbv501g.domain.User;
-import is.hi.hbv501g.repository.UserRepository;
 import is.hi.hbv501g.service.PlaylistService;
+import is.hi.hbv501g.service.UserService;
 import is.hi.hbv501g.web.dto.PlaylistTrackResponse;
 import is.hi.hbv501g.web.dto.UpdateMarkersRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,31 +22,72 @@ import java.util.Optional;
 @RequestMapping("/api/playlists")
 public class PlaylistController {
 
-    private Long userId;
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-
     private final PlaylistService playlistService;
+    private final UserService userService;
 
-    public PlaylistController(PlaylistService playlistService) {
+    public PlaylistController(PlaylistService playlistService, UserService userService) {
         this.playlistService = playlistService;
+        this.userService = userService;
     }
 
-    // CREATE a playlist
+    // ---------- DTO for creating a playlist ----------
+    public static class CreatePlaylistRequest {
+        private String name;
+        private boolean isPublic;
+        private String imageUrl;
+
+        public String getName() { return name; }
+        public boolean isPublic() { return isPublic; }
+        public String getImageUrl() { return imageUrl; }
+
+        public void setName(String name) { this.name = name; }
+        public void setPublic(boolean aPublic) { isPublic = aPublic; }
+        public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    }
+
+    // CREATE a playlist for the logged-in user
     @PostMapping
-    public ResponseEntity<Playlist> create(@RequestBody CreatePlaylistRequest req) {
-        Optional<User> userOpt = UserRepository.findById(req.getUserId());
-        if (!userOpt.isPresent()) {
-            return ResponseEntity.badRequest().build(); // or custom error
+    public ResponseEntity<Playlist> create(@RequestBody CreatePlaylistRequest req, HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Playlist p = playlistService.create(req.getName(), req.isPublic(), req.getImageUrl());
+
+        Optional<User> userOpt = userService.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Playlist p = playlistService.create(
+                req.getName(),
+                req.isPublic(),
+                req.getImageUrl(),
+                userOpt.get()
+        );
         return ResponseEntity.created(URI.create("/api/playlists/" + p.getPlaylistId())).body(p);
     }
 
-    // GET paginated list of playlists
+    // GET paginated list of ALL playlists (you can keep this if you like)
     @GetMapping
     public Page<Playlist> list(Pageable pageable) {
         return playlistService.list(pageable);
+    }
+
+    // GET only the current user's playlists
+    @GetMapping("/mine")
+    public ResponseEntity<List<Playlist>> myPlaylists(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<User> userOpt = userService.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<Playlist> playlists = playlistService.listByOwner(userOpt.get());
+        return ResponseEntity.ok(playlists);
     }
 
     // GET a specific playlist by ID
@@ -63,7 +106,7 @@ public class PlaylistController {
                 : ResponseEntity.notFound().build();
     }
 
-    // POST a track to a playlist
+    // POST a track to a playlist (unchanged: you already had this)
     @PostMapping("/{playlistId}/tracks")
     public ResponseEntity<PlaylistTrackResponse> addTrack(@PathVariable Long playlistId,
                                                           @RequestParam Long trackId) {
@@ -96,14 +139,15 @@ public class PlaylistController {
                 : ResponseEntity.notFound().build();
     }
 
-    // UPDATE markers for a track in a playlist
+    // UPDATE markers for a track in a playlist (this covers your "start/end" feature)
     @PutMapping("/{playlistId}/tracks/{playlistTrackId}/markers")
     public ResponseEntity<PlaylistTrackResponse> updateMarkers(
             @PathVariable Long playlistId,
             @PathVariable Long playlistTrackId,
             @RequestBody UpdateMarkersRequest request) {
         try {
-            PlaylistTrackResponse dto = playlistService.updateTrackMarkers(playlistId, playlistTrackId, request.getStartMs(), request.getEndMs());
+            PlaylistTrackResponse dto = playlistService.updateTrackMarkers(
+                    playlistId, playlistTrackId, request.getStartMs(), request.getEndMs());
             return ResponseEntity.ok(dto);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -136,37 +180,6 @@ public class PlaylistController {
             return ResponseEntity.notFound().build();
         } catch (IllegalStateException e) {
             return ResponseEntity.status(403).build();
-        }
-    }
-
-    // DTO for creating a playlist
-    public static class CreatePlaylistRequest {
-        private String name;
-        private boolean isPublic;
-        private String imageUrl;
-
-        public String getName() {
-            return name;
-        }
-
-        public boolean isPublic() {
-            return isPublic;
-        }
-
-        public String getImageUrl() {
-            return imageUrl;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public void setPublic(boolean aPublic) {
-            isPublic = aPublic;
-        }
-
-        public void setImageUrl(String imageUrl) {
-            this.imageUrl = imageUrl;
         }
     }
 }
