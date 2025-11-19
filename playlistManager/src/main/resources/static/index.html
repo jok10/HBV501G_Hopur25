@@ -1,189 +1,359 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Playlist Manager - Audio Demo</title>
+    <title>Playlist Manager</title>
+    <style>
+        body { font-family: sans-serif; margin: 2rem; }
+        h1, h2 { margin-bottom: 0.3rem; }
+        .box { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
+        label { display: block; margin-top: 0.3rem; }
+        input[type=text], input[type=password], input[type=url], input[type=number] {
+            width: 100%; max-width: 400px;
+        }
+        button { margin-top: 0.5rem; }
+        .error { color: darkred; margin-top: 0.5rem; }
+        .success { color: darkgreen; margin-top: 0.5rem; }
+        .playlist { margin: 0.5rem 0; }
+        .track { margin: 0.5rem 0; }
+    </style>
 </head>
 <body>
 <h1>Playlist Manager</h1>
 
-<section id="auth">
-    <h2>Register</h2>
-    <form id="registerForm">
-        <input name="username" placeholder="Username" required>
-        <input name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Register</button>
-    </form>
+<div id="auth-section" class="box">
+    <h2>Authentication</h2>
 
-    <h2>Login</h2>
-    <form id="loginForm">
-        <input name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Login</button>
-    </form>
+    <div id="auth-status">Not logged in</div>
 
-    <button id="logoutBtn" style="display:none">Logout</button>
-    <p id="currentUser"></p>
-</section>
+    <h3>Register</h3>
+    <label>
+        Username:
+        <input id="reg-username" type="text">
+    </label>
+    <label>
+        Email:
+        <input id="reg-email" type="text">
+    </label>
+    <label>
+        Password:
+        <input id="reg-password" type="password">
+    </label>
+    <button id="btn-register">Register</button>
 
-<hr>
+    <h3>Login</h3>
+    <label>
+        Username:
+        <input id="login-username" type="text">
+    </label>
+    <label>
+        Password:
+        <input id="login-password" type="password">
+    </label>
+    <button id="btn-login">Login</button>
+    <button id="btn-logout">Logout</button>
 
-<section id="playlists">
-    <h2>Create Playlist</h2>
-    <form id="playlistForm">
-        <input name="name" placeholder="Playlist name" required>
-        <label>
-            <input type="checkbox" name="isPublic">
-            Public
-        </label>
-        <input name="imageUrl" placeholder="Image URL (optional)">
-        <button type="submit">Create</button>
-    </form>
+    <div id="auth-message" class=""></div>
+</div>
 
-    <h3>My Playlists</h3>
-    <ul id="myPlaylists"></ul>
-</section>
+<div id="playlist-section" class="box" style="display:none;">
+    <h2>My Playlists</h2>
 
-<hr>
+    <h3>Create Playlist</h3>
+    <label>
+        Name:
+        <input id="pl-name" type="text">
+    </label>
+    <label>
+        Public:
+        <input id="pl-public" type="checkbox" checked>
+    </label>
+    <label>
+        Image URL (optional):
+        <input id="pl-image" type="text">
+    </label>
+    <button id="btn-create-playlist">Create Playlist</button>
 
-<section id="tracksSection">
-    <h2>Tracks (sample)</h2>
-    <div id="tracks"></div>
-</section>
+    <h3>Your Playlists</h3>
+    <div id="my-playlists"></div>
+</div>
+
+<div id="tracks-section" class="box">
+    <h2>Tracks</h2>
+
+    <h3>Create Track (with external audio URL)</h3>
+    <label>
+        Title:
+        <input id="tr-title" type="text">
+    </label>
+    <label>
+        Artist:
+        <input id="tr-artist" type="text">
+    </label>
+    <label>
+        Album:
+        <input id="tr-album" type="text">
+    </label>
+    <label>
+        Duration (ms):
+        <input id="tr-duration" type="number" value="600000">
+    </label>
+    <label>
+        Audio URL:
+        <input id="tr-fileurl" type="url" placeholder="https://example.com/song.mp3">
+    </label>
+    <label>
+        MIME type:
+        <input id="tr-mime" type="text" value="audio/mpeg">
+    </label>
+    <button id="btn-create-track">Create Track</button>
+
+    <h3>All Tracks (page 0, size 10)</h3>
+    <div id="tracks-list"></div>
+</div>
 
 <script>
-    let currentUser = null;
+    let currentUserId = null;
+    let currentToken = null; // we don't strictly need it for session-based auth
 
-    function updateAuthUI() {
-        const userP = document.getElementById("currentUser");
-        const logoutBtn = document.getElementById("logoutBtn");
-        if (currentUser) {
-            userP.textContent = "Logged in as: " + currentUser.username;
-            logoutBtn.style.display = "inline-block";
+    function setAuthMessage(msg, isError = false) {
+        const el = document.getElementById("auth-message");
+        el.textContent = msg || "";
+        el.className = isError ? "error" : "success";
+    }
+
+    function updateAuthStatus() {
+        const statusEl = document.getElementById("auth-status");
+        if (currentUserId) {
+            statusEl.textContent = "Logged in as user #" + currentUserId;
+            document.getElementById("playlist-section").style.display = "block";
         } else {
-            userP.textContent = "Not logged in";
-            logoutBtn.style.display = "none";
+            statusEl.textContent = "Not logged in";
+            document.getElementById("playlist-section").style.display = "none";
         }
     }
 
-    // --------- Register ----------
-    document.getElementById("registerForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const data = Object.fromEntries(new FormData(e.target).entries());
+    async function checkMe() {
+        try {
+            const res = await fetch("/api/auth/me");
+            if (!res.ok) {
+                currentUserId = null;
+                updateAuthStatus();
+                return;
+            }
+            const data = await res.json();
+            if (data.authenticated) {
+                currentUserId = data.userId;
+            } else {
+                currentUserId = null;
+            }
+            updateAuthStatus();
+            if (currentUserId) {
+                await loadMyPlaylists();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function loadMyPlaylists() {
+        if (!currentUserId) return;
+        const res = await fetch("/api/playlists/mine");
+        if (!res.ok) {
+            document.getElementById("my-playlists").textContent = "Could not load playlists.";
+            return;
+        }
+        const data = await res.json();
+        const container = document.getElementById("my-playlists");
+        container.innerHTML = "";
+        data.forEach(pl => {
+            const div = document.createElement("div");
+            div.className = "playlist";
+            div.innerHTML = `
+                <strong>${pl.name}</strong> (ID: ${pl.playlistId}, public: ${pl.public})<br>
+                Created at: ${pl.createdAt || ""}<br>
+                <button onclick="viewPlaylistTracks(${pl.playlistId})">View Tracks</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    async function viewPlaylistTracks(playlistId) {
+        const res = await fetch(`/api/playlists/${playlistId}/tracks`);
+        if (!res.ok) {
+            alert("Could not load tracks for playlist " + playlistId);
+            return;
+        }
+        const tracks = await res.json();
+        alert("Tracks for playlist " + playlistId + ":\n" +
+            tracks.map(t => `#${t.position}: trackId=${t.trackId}, start=${t.startMs}, end=${t.endMs}`).join("\n"));
+    }
+
+    async function loadTracks() {
+        const res = await fetch("/api/tracks?page=0&size=10");
+        if (!res.ok) {
+            document.getElementById("tracks-list").textContent = "Could not load tracks.";
+            return;
+        }
+        const data = await res.json();
+        const container = document.getElementById("tracks-list");
+        container.innerHTML = "";
+        data.content.forEach(t => {
+            const div = document.createElement("div");
+            div.className = "track";
+            div.innerHTML = `
+                <strong>${t.title}</strong> by ${t.artist} (ID: ${t.trackId})<br>
+                <audio controls src="/api/tracks/${t.trackId}/stream"></audio><br>
+                <label>
+                    Playlist ID:
+                    <input type="number" min="1" value="" id="pl-for-track-${t.trackId}">
+                </label>
+                <button onclick="addTrackToPlaylist(${t.trackId})">Add to playlist</button>
+                <hr>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    async function addTrackToPlaylist(trackId) {
+        const input = document.getElementById("pl-for-track-" + trackId);
+        const playlistId = input.value;
+        if (!playlistId) {
+            alert("Enter a playlist ID first.");
+            return;
+        }
+        const res = await fetch(`/api/playlists/${playlistId}/tracks?trackId=${trackId}`, {
+            method: "POST"
+        });
+        if (!res.ok) {
+            alert("Failed to add track to playlist (HTTP " + res.status + ")");
+            return;
+        }
+        const data = await res.json();
+        alert("Added track to playlist. PlaylistTrack id: " + data.playlistTrackId);
+    }
+
+    // ---- Button wiring ----
+    document.getElementById("btn-register").onclick = async () => {
+        const username = document.getElementById("reg-username").value;
+        const email = document.getElementById("reg-email").value;
+        const password = document.getElementById("reg-password").value;
+
+        setAuthMessage("");
+
         const res = await fetch("/api/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ username, email, password })
         });
-        if (res.ok) {
-            alert("Registered successfully. You can now log in.");
-            e.target.reset();
-        } else {
-            alert("Registration failed");
-        }
-    });
 
-    // --------- Login ----------
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const data = Object.fromEntries(new FormData(e.target).entries());
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch (_) { data = null; }
+
+        if (!res.ok) {
+            setAuthMessage(data?.error || "Registration failed", true);
+            return;
+        }
+
+        currentUserId = data.userId;
+        updateAuthStatus();
+        setAuthMessage("Registered and logged in as " + data.username);
+        await loadMyPlaylists();
+    };
+
+    document.getElementById("btn-login").onclick = async () => {
+        const username = document.getElementById("login-username").value;
+        const password = document.getElementById("login-password").value;
+
+        setAuthMessage("");
+
         const res = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ username, password })
         });
-        if (res.ok) {
-            currentUser = await res.json();
-            updateAuthUI();
-            loadMyPlaylists();
-        } else {
-            alert("Login failed");
+
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch (_) { data = null; }
+
+        if (!res.ok) {
+            setAuthMessage(data?.error || "Login failed", true);
+            currentUserId = null;
+            updateAuthStatus();
+            return;
         }
-    });
 
-    // --------- Logout ----------
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
+        currentUserId = data.userId;
+        currentToken = data.token;
+        updateAuthStatus();
+        setAuthMessage("Logged in as " + data.username);
+        await loadMyPlaylists();
+    };
+
+    document.getElementById("btn-logout").onclick = async () => {
         await fetch("/api/auth/logout", { method: "POST" });
-        currentUser = null;
-        updateAuthUI();
-        document.getElementById("myPlaylists").innerHTML = "";
-    });
+        currentUserId = null;
+        currentToken = null;
+        updateAuthStatus();
+        setAuthMessage("Logged out.");
+        document.getElementById("my-playlists").innerHTML = "";
+    };
 
-    // --------- Create playlist ----------
-    document.getElementById("playlistForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        if (!currentUser) {
+    document.getElementById("btn-create-playlist").onclick = async () => {
+        if (!currentUserId) {
             alert("You must be logged in to create a playlist.");
             return;
         }
-        const formData = new FormData(e.target);
-        const payload = {
-            name: formData.get("name"),
-            isPublic: formData.get("isPublic") === "on",
-            imageUrl: formData.get("imageUrl") || null
-        };
+        const name = document.getElementById("pl-name").value;
+        const isPublic = document.getElementById("pl-public").checked;
+        const imageUrl = document.getElementById("pl-image").value || null;
 
         const res = await fetch("/api/playlists", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ name, isPublic, imageUrl })
         });
 
-        if (res.ok) {
-            e.target.reset();
-            loadMyPlaylists();
-        } else if (res.status === 401) {
-            alert("Not logged in.");
-        } else {
-            alert("Failed to create playlist");
-        }
-    });
-
-    // --------- Load my playlists ----------
-    async function loadMyPlaylists() {
-        const ul = document.getElementById("myPlaylists");
-        ul.innerHTML = "";
-        const res = await fetch("/api/playlists/mine");
         if (!res.ok) {
+            alert("Failed to create playlist (HTTP " + res.status + ")");
             return;
         }
-        const playlists = await res.json();
-        playlists.forEach(p => {
-            const li = document.createElement("li");
-            li.textContent = `#${p.playlistId} - ${p.name} ${p.public ? "(public)" : ""}`;
-            ul.appendChild(li);
-        });
-    }
 
-    // --------- Load sample tracks (unchanged) ----------
-    async function loadTracks() {
-        const res = await fetch("/api/tracks?page=0&size=10");
         const data = await res.json();
-        const div = document.getElementById("tracks");
-        div.innerHTML = "";
-        data.content.forEach(t => {
-            div.innerHTML += `
-                <div>
-                  <strong>${t.title}</strong> by ${t.artist} <br>
-                  <audio controls src="/api/tracks/${t.trackId}/stream"></audio>
-                  <hr>
-                </div>
-            `;
-        });
-    }
+        alert("Created playlist with ID " + data.playlistId);
+        await loadMyPlaylists();
+    };
 
-    // On load: try to fetch current user (if session exists) and load data
-    (async function init() {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-            currentUser = await res.json();
+    document.getElementById("btn-create-track").onclick = async () => {
+        const title = document.getElementById("tr-title").value;
+        const artist = document.getElementById("tr-artist").value;
+        const album = document.getElementById("tr-album").value;
+        const durationMs = Number(document.getElementById("tr-duration").value) || 0;
+        const fileUrl = document.getElementById("tr-fileurl").value;
+        const mimeType = document.getElementById("tr-mime").value;
+
+        const res = await fetch("/api/tracks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, artist, album, durationMs, fileUrl, mimeType })
+        });
+
+        if (!res.ok) {
+            alert("Failed to create track (HTTP " + res.status + ")");
+            return;
         }
-        updateAuthUI();
-        if (currentUser) {
-            loadMyPlaylists();
-        }
-        loadTracks();
+
+        const data = await res.json();
+        alert("Created track with ID " + data.trackId);
+        await loadTracks();
+    };
+
+    // initial load
+    (async () => {
+        await checkMe();   // see if session already has a user
+        await loadTracks();
     })();
 </script>
 </body>
