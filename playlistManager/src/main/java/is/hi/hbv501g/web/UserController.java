@@ -1,36 +1,51 @@
 package is.hi.hbv501g.web;
 
+import is.hi.hbv501g.domain.Playlist;
 import is.hi.hbv501g.domain.User;
-import is.hi.hbv501g.service.UserService;
+import is.hi.hbv501g.repository.PlaylistRepository;
+import is.hi.hbv501g.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserService users;
+    private final UserRepository users;
+    private final PlaylistRepository playlists;
 
-    public UserController(UserService users) {
+    public UserController(UserRepository users, PlaylistRepository playlists) {
         this.users = users;
+        this.playlists = playlists;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
-        users.register(user);
-        return ResponseEntity.created(URI.create("/api/users/" + user.getUserId()))
-                .body(Map.of("status", "registered"));
+    // Create user (simple, used mainly for debugging – for real use we’ll use /api/auth/register)
+    @PostMapping
+    public ResponseEntity<User> create(@RequestBody User user) {
+        User saved = users.save(user);
+        return ResponseEntity.created(URI.create("/api/users/" + saved.getUserId())).body(saved);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        String token = users.authenticate(body.get("username"), body.get("password"));
-        if (token == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+    // Get user by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUser(@PathVariable Long id) {
+        Optional<User> user = users.findById(id);
+        return user.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Get playlists for a given user
+    @GetMapping("/{id}/playlists")
+    public ResponseEntity<List<Playlist>> getUserPlaylists(@PathVariable Long id) {
+        Optional<User> userOpt = users.findById(id);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(Map.of("token", token));
+        List<Playlist> pls = playlists.findByOwner(userOpt.get());
+        return ResponseEntity.ok(pls);
     }
 }

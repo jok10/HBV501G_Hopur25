@@ -42,14 +42,12 @@ public class PlaylistService {
         playlist.setPublic(isPublic);
         playlist.setImageUrl(imageUrl);
         playlist.setCreatedAt(Instant.now());
-        playlist.setOwner(owner); // IMPORTANT
+        playlist.setOwner(owner);
         return playlists.save(playlist);
     }
 
+
     // list all playlists for a given owner
-    public List<Playlist> listByOwner(User owner) {
-        return playlists.findByOwner(owner);
-    }
 
     // GET playlist by id
     public Optional<Playlist> get(Long id) {
@@ -100,6 +98,10 @@ public class PlaylistService {
     @Transactional(readOnly = true)
     public List<PlaylistTrack> listTracks(Long playlistId) {
         return playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId);
+    }
+    @Transactional(readOnly = true)
+    public List<Playlist> listByOwner(User owner) {
+        return playlists.findByOwner(owner);
     }
 
     // DELETE playlist

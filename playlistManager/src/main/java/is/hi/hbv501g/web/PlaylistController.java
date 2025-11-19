@@ -67,7 +67,7 @@ public class PlaylistController {
         return ResponseEntity.created(URI.create("/api/playlists/" + p.getPlaylistId())).body(p);
     }
 
-    // GET paginated list of ALL playlists (you can keep this if you like)
+    // GET paginated list of ALL playlists (useful for debugging)
     @GetMapping
     public Page<Playlist> list(Pageable pageable) {
         return playlistService.list(pageable);
@@ -106,7 +106,7 @@ public class PlaylistController {
                 : ResponseEntity.notFound().build();
     }
 
-    // POST a track to a playlist (unchanged: you already had this)
+    // POST a track to a playlist
     @PostMapping("/{playlistId}/tracks")
     public ResponseEntity<PlaylistTrackResponse> addTrack(@PathVariable Long playlistId,
                                                           @RequestParam Long trackId) {
@@ -139,7 +139,7 @@ public class PlaylistController {
                 : ResponseEntity.notFound().build();
     }
 
-    // UPDATE markers for a track in a playlist (this covers your "start/end" feature)
+    // UPDATE markers for a track in a playlist (start/end)
     @PutMapping("/{playlistId}/tracks/{playlistTrackId}/markers")
     public ResponseEntity<PlaylistTrackResponse> updateMarkers(
             @PathVariable Long playlistId,
