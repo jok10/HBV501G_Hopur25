@@ -560,6 +560,7 @@
         }
     }
 
+    // remove track from playlist stays as-is, this goes AFTER deletePlaylistTrack()
     async function loadPlaylistTracks(playlistId, container) {
         container.textContent = "Loading…";
         try {
@@ -582,14 +583,14 @@
                 const label = document.createElement("div");
                 const title = meta ? `${meta.title} by ${meta.artist}` : `Track ID ${pt.trackId}`;
                 label.innerHTML = `#${pt.position + 1}: <strong>${title}</strong>
-                    <span class="pill">playlistTrackId: ${pt.playlistTrackId}</span>`;
+                <span class="pill">playlistTrackId: ${pt.playlistTrackId}</span>`;
                 div.appendChild(label);
 
                 const audio = document.createElement("audio");
                 audio.controls = true;
                 audio.src = `/api/tracks/${pt.trackId}/stream`;
 
-                // --- marker handling with scrubbing allowed ---
+                // --- marker playback handling ---
                 const hasStart = pt.startMs != null;
                 const hasEnd   = pt.endMs != null && pt.endMs > 0;
                 const startSec = hasStart ? (pt.startMs / 1000) : 0;
@@ -597,18 +598,15 @@
 
                 if (hasStart || hasEnd) {
                     audio.addEventListener("loadedmetadata", function () {
-                        // start at marker on first load
                         if (hasStart && this.currentTime < startSec) {
                             this.currentTime = startSec;
                         }
                     });
 
                     audio.addEventListener("timeupdate", function () {
-                        // prevent going before start a bit
                         if (hasStart && this.currentTime < startSec - 0.05) {
                             this.currentTime = startSec;
                         }
-                        // stop after end but do NOT reset, so user can scrub up to that point
                         if (hasEnd && this.currentTime > endSec + 0.05) {
                             this.pause();
                         }
@@ -617,6 +615,83 @@
 
                 div.appendChild(audio);
                 audios.push(audio);
+
+                // --- marker UI: inputs + 'use current position' + save ---
+                const markerDiv = document.createElement("div");
+                markerDiv.className = "small";
+                markerDiv.style.marginTop = "0.3rem";
+
+                // Start ms input
+                const startLabel = document.createElement("label");
+                startLabel.style.marginRight = "0.4rem";
+                startLabel.textContent = "Start (ms): ";
+                const startInput = document.createElement("input");
+                startInput.type = "number";
+                startInput.min = "0";
+                startInput.step = "100";
+                startInput.style.width = "6rem";
+                startInput.value = (pt.startMs != null ? pt.startMs : 0);
+                startLabel.appendChild(startInput);
+                markerDiv.appendChild(startLabel);
+
+                const btnSetStart = document.createElement("button");
+                btnSetStart.type = "button";
+                btnSetStart.textContent = "From current";
+                btnSetStart.onclick = () => {
+                    startInput.value = Math.floor(audio.currentTime * 1000);
+                };
+                markerDiv.appendChild(btnSetStart);
+
+                // End ms input
+                const endLabel = document.createElement("label");
+                endLabel.style.marginLeft = "0.6rem";
+                endLabel.style.marginRight = "0.4rem";
+                endLabel.textContent = "End (ms): ";
+                const endInput = document.createElement("input");
+                endInput.type = "number";
+                endInput.min = "0";
+                endInput.step = "100";
+                endInput.style.width = "6rem";
+                endInput.value = (pt.endMs != null ? pt.endMs : 0);
+                endLabel.appendChild(endInput);
+                markerDiv.appendChild(endLabel);
+
+                const btnSetEnd = document.createElement("button");
+                btnSetEnd.type = "button";
+                btnSetEnd.textContent = "From current";
+                btnSetEnd.onclick = () => {
+                    endInput.value = Math.floor(audio.currentTime * 1000);
+                };
+                markerDiv.appendChild(btnSetEnd);
+
+                // Save markers button
+                const btnSaveMarkers = document.createElement("button");
+                btnSaveMarkers.type = "button";
+                btnSaveMarkers.style.marginLeft = "0.6rem";
+                btnSaveMarkers.textContent = "Save markers";
+                btnSaveMarkers.onclick = async () => {
+                    const startVal = parseInt(startInput.value, 10) || 0;
+                    const endVal   = parseInt(endInput.value, 10)   || 0;
+
+                    try {
+                        await apiFetch(`/api/playlists/${playlistId}/tracks/${pt.playlistTrackId}/markers`, {
+                            method: "PUT",
+                            body: JSON.stringify({
+                                startMs: startVal,
+                                endMs: endVal
+                            })
+                        });
+                        alert("Markers saved.");
+                        // reload this playlist to re-bind playback handlers with new markers
+                        await loadPlaylistTracks(playlistId, container);
+                    } catch (err) {
+                        console.error(err);
+                        alert("Failed to save markers: " + err.message);
+                    }
+                };
+                markerDiv.appendChild(btnSaveMarkers);
+
+                div.appendChild(markerDiv);
 
                 // remove-from-playlist button
                 const btnRemove = document.createElement("button");
@@ -644,6 +719,7 @@
             container.innerHTML = `<span class="error">Failed to load tracks: ${e.message}</span>`;
         }
     }
+
 
     // Fill all "playlist-select" elements with options from myPlaylists
     function refreshPlaylistSelectOptions() {
