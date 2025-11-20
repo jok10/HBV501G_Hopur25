@@ -183,7 +183,7 @@
                     <input type="text" id="track-album">
                 </label>
                 <label>Duration (ms)
-                    <input type="number" id="track-duration" value="180000" min="1000" step="1000">
+                    <input type="number" id="track-duration" value="600000" min="1000" step="1000">
                 </label>
                 <label>Audio URL (direct .mp3/.ogg/.wav…)
                     <input type="text" id="track-url" required>
@@ -609,8 +609,11 @@
                         }
                         if (hasEnd && this.currentTime > endSec + 0.05) {
                             this.pause();
+                            // Pretend the track naturally finished so the "ended" handler fires
+                            this.dispatchEvent(new Event("ended"));
                         }
                     });
+
                 }
 
                 div.appendChild(audio);
