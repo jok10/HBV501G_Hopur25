@@ -212,10 +212,6 @@
                 <label>Name
                     <input type="text" id="playlist-name" required>
                 </label>
-                <label>
-                    <input type="checkbox" id="playlist-public">
-                    Public playlist
-                </label>
                 <label>Image URL (optional)
                     <input type="text" id="playlist-image">
                 </label>
@@ -320,11 +316,10 @@
     }
 
     // -------- tracks --------
-    // -------- tracks --------
     async function loadTracks() {
         const container = document.getElementById("tracks-list");
         try {
-            const page = await apiFetch("/api/tracks?page=0&size=50", { method: "GET" });
+            const page = await apiFetch("/api/tracks?page=0&size=50", {method: "GET"});
             allTracks = page.content || [];
             if (allTracks.length === 0) {
                 container.textContent = "No tracks in the system yet.";
@@ -343,6 +338,7 @@
 
                 const audio = document.createElement("audio");
                 audio.controls = true;
+                // plain full-track playback on the left side
                 audio.src = `/api/tracks/${t.trackId}/stream`;
                 div.appendChild(audio);
 
@@ -370,6 +366,7 @@
             container.innerHTML = `<span class="error">Failed to load tracks: ${e.message}</span>`;
         }
     }
+
 
 
     async function createTrack(e) {
