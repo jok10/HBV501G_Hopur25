@@ -320,10 +320,11 @@
     }
 
     // -------- tracks --------
+    // -------- tracks --------
     async function loadTracks() {
         const container = document.getElementById("tracks-list");
         try {
-            const page = await apiFetch("/api/tracks?page=0&size=50", {method: "GET"});
+            const page = await apiFetch("/api/tracks?page=0&size=50", { method: "GET" });
             allTracks = page.content || [];
             if (allTracks.length === 0) {
                 container.textContent = "No tracks in the system yet.";
@@ -336,40 +337,13 @@
                 div.className = "track-row";
 
                 const title = document.createElement("div");
-                title.innerHTML = `<strong>${t.title}</strong> by ${t.artist} <span class="pill">ID: ${t.trackId}</span>`;
+                title.innerHTML =
+                    `<strong>${t.title}</strong> by ${t.artist} <span class="pill">ID: ${t.trackId}</span>`;
                 div.appendChild(title);
 
                 const audio = document.createElement("audio");
                 audio.controls = true;
                 audio.src = `/api/tracks/${t.trackId}/stream`;
-
-                // --- marker handling with scrubbing allowed ---
-                const hasStart = pt.startMs != null;
-                const hasEnd   = pt.endMs != null && pt.endMs > 0;
-                const startSec = hasStart ? (pt.startMs / 1000) : 0;
-                const endSec   = hasEnd   ? (pt.endMs   / 1000) : 0;
-
-                if (hasStart || hasEnd) {
-                    audio.addEventListener("loadedmetadata", function () {
-                        // start at marker on first load
-                        if (hasStart && this.currentTime < startSec) {
-                            this.currentTime = startSec;
-                        }
-                    });
-
-                    audio.addEventListener("timeupdate", function () {
-                        // prevent going before start a bit
-                        if (hasStart && this.currentTime < startSec - 0.05) {
-                            this.currentTime = startSec;
-                        }
-                        // stop after end but do NOT reset, so user can scrub up to that point
-                        if (hasEnd && this.currentTime > endSec + 0.05) {
-                            this.pause();
-                        }
-                    });
-                }
-
-
                 div.appendChild(audio);
 
                 // Add-to-playlist controls
@@ -396,6 +370,7 @@
             container.innerHTML = `<span class="error">Failed to load tracks: ${e.message}</span>`;
         }
     }
+
 
     async function createTrack(e) {
         e.preventDefault();
