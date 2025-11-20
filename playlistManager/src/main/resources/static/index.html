@@ -125,11 +125,7 @@
 
 <div class="card">
     <h2>Login / Register</h2>
-    <p class="small">
-        These endpoints assume you have:
-        <code>POST /api/auth/register</code> and <code>POST /api/auth/login</code>
-        that use HTTP sessions (<code>HttpSession.setAttribute("userId", ...)</code>).
-    </p>
+    <!-- paragraph with 'These endpoints assume you have...' has been removed -->
     <div class="auth-row">
         <!-- Register -->
         <div>
@@ -443,7 +439,7 @@
                 }
                 card.appendChild(created);
 
-                // NEW: show playlist image (if any)
+                // show playlist image (if any)
                 if (p.imageUrl) {
                     const img = document.createElement("img");
                     img.src = p.imageUrl;
