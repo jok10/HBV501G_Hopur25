@@ -232,6 +232,7 @@
     // --- global-ish state ---
     let allTracks = [];      // list of tracks from /api/tracks
     let myPlaylists = [];    // list from /api/playlists/mine
+    let isLoggedIn = false;  // NEW: track login state on the frontend
 
     // -------- helper fetch with JSON ----------
     async function apiFetch(url, options = {}) {
@@ -292,11 +293,13 @@
                 method: "POST",
                 body: JSON.stringify(body)
             });
+            isLoggedIn = true;  // NEW
             status.innerHTML = `<span class="ok">Logged in as ${username}.</span>`;
             document.getElementById("login-form").reset();
             await loadMyPlaylists();
         } catch (e2) {
             console.error(e2);
+            isLoggedIn = false; // login failed
             status.innerHTML = `<span class="error">Login failed: ${e2.message}</span>`;
         }
     }
@@ -309,6 +312,7 @@
             console.error(e);
             // even if logout endpoint is missing, just clear UI
         }
+        isLoggedIn = false; // NEW
         status.innerHTML = `<span class="ok">Logged out.</span>`;
         myPlaylists = [];
         refreshPlaylistSelectOptions();
@@ -367,12 +371,16 @@
         }
     }
 
-
-
     async function createTrack(e) {
         e.preventDefault();
         const status = document.getElementById("create-track-status");
         status.textContent = "";
+
+        // NEW: block creating tracks when not logged in
+        if (!isLoggedIn) {
+            status.innerHTML = `<span class="error">You must be logged in to create tracks.</span>`;
+            return;
+        }
 
         const body = {
             title: document.getElementById("track-title").value.trim(),
@@ -404,6 +412,7 @@
         try {
             const res = await fetch("/api/playlists/mine", {credentials: "same-origin"});
             if (res.status === 401 || res.status === 403) {
+                isLoggedIn = false; // NEW: backend says not logged in
                 container.innerHTML =
                     `<span class="error">You are not logged in or session expired. Log in, then reload this page.</span>`;
                 myPlaylists = [];
@@ -413,6 +422,7 @@
             if (!res.ok) {
                 throw new Error("HTTP " + res.status + " " + res.statusText);
             }
+            isLoggedIn = true; // NEW: request worked, so session is live
             myPlaylists = await res.json();
             refreshPlaylistSelectOptions();
 
@@ -489,7 +499,7 @@
 
         const body = {
             name: document.getElementById("playlist-name").value.trim(),
-            public: document.getElementById("playlist-public").checked,
+            public: false,  // playlists default to private
             imageUrl: document.getElementById("playlist-image").value.trim() || null
         };
 
