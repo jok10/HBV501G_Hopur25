@@ -342,6 +342,34 @@
                 const audio = document.createElement("audio");
                 audio.controls = true;
                 audio.src = `/api/tracks/${t.trackId}/stream`;
+
+                // --- marker handling with scrubbing allowed ---
+                const hasStart = pt.startMs != null;
+                const hasEnd   = pt.endMs != null && pt.endMs > 0;
+                const startSec = hasStart ? (pt.startMs / 1000) : 0;
+                const endSec   = hasEnd   ? (pt.endMs   / 1000) : 0;
+
+                if (hasStart || hasEnd) {
+                    audio.addEventListener("loadedmetadata", function () {
+                        // start at marker on first load
+                        if (hasStart && this.currentTime < startSec) {
+                            this.currentTime = startSec;
+                        }
+                    });
+
+                    audio.addEventListener("timeupdate", function () {
+                        // prevent going before start a bit
+                        if (hasStart && this.currentTime < startSec - 0.05) {
+                            this.currentTime = startSec;
+                        }
+                        // stop after end but do NOT reset, so user can scrub up to that point
+                        if (hasEnd && this.currentTime > endSec + 0.05) {
+                            this.pause();
+                        }
+                    });
+                }
+
+
                 div.appendChild(audio);
 
                 // Add-to-playlist controls
