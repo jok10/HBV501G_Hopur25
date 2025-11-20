@@ -112,6 +112,12 @@
         .auth-row > div {
             flex: 1 1 260px;
         }
+
+        .playlist-image {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-top: 0.4rem;
+        }
     </style>
 </head>
 <body>
@@ -253,7 +259,7 @@
         return null;
     }
 
-    // -------- AUTH: register / login / logout --------
+    // -------- auth --------
     async function registerUser(e) {
         e.preventDefault();
         const status = document.getElementById("auth-status");
@@ -261,7 +267,7 @@
 
         const body = {
             username: document.getElementById("reg-username").value.trim(),
-            email: document.getElementById("reg-email").value.trim() || null,
+            email: document.getElementById("reg-email").value.trim(),
             password: document.getElementById("reg-password").value
         };
 
@@ -270,11 +276,11 @@
                 method: "POST",
                 body: JSON.stringify(body)
             });
-            status.innerHTML = '<span class="ok">Registered successfully. You can now log in.</span>';
+            status.innerHTML = `<span class="ok">Registered. You can now log in.</span>`;
             document.getElementById("register-form").reset();
         } catch (e2) {
             console.error(e2);
-            status.innerHTML = '<span class="error">Register failed: ' + e2.message + '</span>';
+            status.innerHTML = `<span class="error">Register failed: ${e2.message}</span>`;
         }
     }
 
@@ -283,8 +289,9 @@
         const status = document.getElementById("auth-status");
         status.textContent = "";
 
+        const username = document.getElementById("login-username").value.trim();
         const body = {
-            username: document.getElementById("login-username").value.trim(),
+            username: username,
             password: document.getElementById("login-password").value
         };
 
@@ -293,31 +300,27 @@
                 method: "POST",
                 body: JSON.stringify(body)
             });
-            status.innerHTML = '<span class="ok">Logged in. You can now use your playlists.</span>';
+            status.innerHTML = `<span class="ok">Logged in as ${username}.</span>`;
             document.getElementById("login-form").reset();
             await loadMyPlaylists();
         } catch (e2) {
             console.error(e2);
-            status.innerHTML = '<span class="error">Login failed: ' + e2.message + '</span>';
+            status.innerHTML = `<span class="error">Login failed: ${e2.message}</span>`;
         }
     }
 
     async function logoutUser() {
         const status = document.getElementById("auth-status");
-        status.textContent = "";
         try {
-            await apiFetch("/api/auth/logout", {
-                method: "POST"
-            });
-        } catch (e2) {
-            console.error(e2);
-            // even if logout endpoint is missing, clear local state
+            await apiFetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {
+            console.error(e);
+            // even if logout endpoint is missing, just clear UI
         }
-        status.innerHTML = '<span class="ok">Logged out.</span>';
+        status.innerHTML = `<span class="ok">Logged out.</span>`;
         myPlaylists = [];
         refreshPlaylistSelectOptions();
-        const container = document.getElementById("my-playlists");
-        container.textContent = "You are not logged in.";
+        document.getElementById("my-playlists").textContent = "You are logged out.";
     }
 
     // -------- tracks --------
@@ -337,13 +340,12 @@
                 div.className = "track-row";
 
                 const title = document.createElement("div");
-                title.innerHTML = '<strong>' + t.title + '</strong> by ' + t.artist +
-                    ' <span class="pill">ID: ' + t.trackId + '</span>';
+                title.innerHTML = `<strong>${t.title}</strong> by ${t.artist} <span class="pill">ID: ${t.trackId}</span>`;
                 div.appendChild(title);
 
                 const audio = document.createElement("audio");
                 audio.controls = true;
-                audio.src = "/api/tracks/" + t.trackId + "/stream";
+                audio.src = `/api/tracks/${t.trackId}/stream`;
                 div.appendChild(audio);
 
                 // Add-to-playlist controls
@@ -367,7 +369,7 @@
             refreshPlaylistSelectOptions();
         } catch (e) {
             console.error(e);
-            container.innerHTML = '<span class="error">Failed to load tracks: ' + e.message + '</span>';
+            container.innerHTML = `<span class="error">Failed to load tracks: ${e.message}</span>`;
         }
     }
 
@@ -390,13 +392,13 @@
                 method: "POST",
                 body: JSON.stringify(body)
             });
-            status.innerHTML = '<span class="ok">Track created.</span>';
+            status.innerHTML = `<span class="ok">Track created.</span>`;
             document.getElementById("create-track-form").reset();
             document.getElementById("track-duration").value = "180000";
             await loadTracks();
         } catch (e2) {
             console.error(e2);
-            status.innerHTML = '<span class="error">Failed: ' + e2.message + '</span>';
+            status.innerHTML = `<span class="error">Failed: ${e2.message}</span>`;
         }
     }
 
@@ -407,7 +409,7 @@
             const res = await fetch("/api/playlists/mine", {credentials: "same-origin"});
             if (res.status === 401 || res.status === 403) {
                 container.innerHTML =
-                    '<span class="error">You are not logged in or session expired. Log in, then reload this page.</span>';
+                    `<span class="error">You are not logged in or session expired. Log in, then reload this page.</span>`;
                 myPlaylists = [];
                 refreshPlaylistSelectOptions();
                 return;
@@ -430,9 +432,8 @@
 
                 const header = document.createElement("div");
                 header.innerHTML =
-                    '<strong>' + p.name + '</strong> ' +
-                    '<span class="pill">ID: ' + p.playlistId + '</span>' +
-                    (p.public ? '<span class="pill">public</span>' : '<span class="pill">private</span>');
+                    `<strong>${p.name}</strong> <span class="pill">ID: ${p.playlistId}</span>` +
+                    (p.public ? `<span class="pill">public</span>` : `<span class="pill">private</span>`);
                 card.appendChild(header);
 
                 const created = document.createElement("div");
@@ -441,6 +442,15 @@
                     created.textContent = "Created: " + p.createdAt;
                 }
                 card.appendChild(created);
+
+                // NEW: show playlist image (if any)
+                if (p.imageUrl) {
+                    const img = document.createElement("img");
+                    img.src = p.imageUrl;
+                    img.alt = p.name || "Playlist image";
+                    img.className = "playlist-image";
+                    card.appendChild(img);
+                }
 
                 // buttons: show tracks + delete playlist
                 const btnRow = document.createElement("div");
@@ -466,13 +476,13 @@
                 btnDelete.onclick = () => deletePlaylist(p.playlistId);
                 btnRow.appendChild(btnDelete);
 
-                card.insertBefore(btnRow, tracksDiv);
+                card.appendChild(btnRow);
 
                 container.appendChild(card);
             }
         } catch (e) {
             console.error(e);
-            container.innerHTML = '<span class="error">Failed to load playlists: ' + e.message + '</span>';
+            container.innerHTML = `<span class="error">Failed to load playlists: ${e.message}</span>`;
         }
     }
 
@@ -492,12 +502,12 @@
                 method: "POST",
                 body: JSON.stringify(body)
             });
-            status.innerHTML = '<span class="ok">Playlist created.</span>';
+            status.innerHTML = `<span class="ok">Playlist created.</span>`;
             document.getElementById("create-playlist-form").reset();
             await loadMyPlaylists();
         } catch (e2) {
             console.error(e2);
-            status.innerHTML = '<span class="error">Failed: ' + e2.message + '</span>';
+            status.innerHTML = `<span class="error">Failed: ${e2.message}</span>`;
         }
     }
 
@@ -508,10 +518,11 @@
             return;
         }
         try {
-            await apiFetch("/api/playlists/" + playlistId + "/tracks?trackId=" + trackId, {
+            await apiFetch(`/api/playlists/${playlistId}/tracks?trackId=${trackId}`, {
                 method: "POST"
             });
-            alert("Track " + trackId + " added to playlist " + playlistId + ".");
+            alert(`Track ${trackId} added to playlist ${playlistId}.`);
+            // reload the playlist list; user can then click "Show tracks" again
             await loadMyPlaylists();
         } catch (e) {
             console.error(e);
@@ -521,9 +532,9 @@
 
     // delete playlist
     async function deletePlaylist(playlistId) {
-        if (!confirm("Really delete playlist " + playlistId + "?")) return;
+        if (!confirm(`Really delete playlist ${playlistId}?`)) return;
         try {
-            await apiFetch("/api/playlists/" + playlistId, { method: "DELETE" });
+            await apiFetch(`/api/playlists/${playlistId}`, { method: "DELETE" });
             await loadMyPlaylists();
         } catch (e) {
             console.error(e);
@@ -533,9 +544,9 @@
 
     // remove track from playlist
     async function deletePlaylistTrack(playlistId, playlistTrackId, container) {
-        if (!confirm("Remove track " + playlistTrackId + " from playlist " + playlistId + "?")) return;
+        if (!confirm(`Remove track ${playlistTrackId} from playlist ${playlistId}?`)) return;
         try {
-            await apiFetch("/api/playlists/" + playlistId + "/tracks/" + playlistTrackId, { method: "DELETE" });
+            await apiFetch(`/api/playlists/${playlistId}/tracks/${playlistTrackId}`, { method: "DELETE" });
             await loadPlaylistTracks(playlistId, container);
         } catch (e) {
             console.error(e);
@@ -543,30 +554,18 @@
         }
     }
 
-    async function updateTrackMarkers(playlistId, playlistTrackId, startInput, endInput, container) {
-        const startMs = startInput.value ? parseInt(startInput.value, 10) : null;
-        const endMs   = endInput.value ? parseInt(endInput.value, 10) : null;
-        try {
-            await apiFetch("/api/playlists/" + playlistId + "/tracks/" + playlistTrackId + "/markers", {
-                method: "PUT",
-                body: JSON.stringify({ startMs: startMs, endMs: endMs })
-            });
-            await loadPlaylistTracks(playlistId, container);
-        } catch (e) {
-            console.error(e);
-            alert("Failed to update markers: " + e.message);
-        }
-    }
-
     async function loadPlaylistTracks(playlistId, container) {
         container.textContent = "Loading…";
         try {
-            const res = await apiFetch("/api/playlists/" + playlistId + "/tracks", {method: "GET"});
+            const res = await apiFetch(`/api/playlists/${playlistId}/tracks`, {method: "GET"});
             if (!Array.isArray(res) || res.length === 0) {
                 container.textContent = "No tracks in this playlist yet.";
                 return;
             }
             container.innerHTML = "";
+
+            const audios = [];
+
             res.forEach(pt => {
                 const meta = allTracks.find(t => t.trackId === pt.trackId);
                 const div = document.createElement("div");
@@ -575,16 +574,16 @@
                 div.style.marginTop = "0.4rem";
 
                 const label = document.createElement("div");
-                const title = meta ? (meta.title + " by " + meta.artist) : ("Track ID " + pt.trackId);
-                label.innerHTML = "#" + (pt.position + 1) + ': <strong>' + title + '</strong>' +
-                    ' <span class="pill">playlistTrackId: ' + pt.playlistTrackId + '</span>';
+                const title = meta ? `${meta.title} by ${meta.artist}` : `Track ID ${pt.trackId}`;
+                label.innerHTML = `#${pt.position + 1}: <strong>${title}</strong>
+                    <span class="pill">playlistTrackId: ${pt.playlistTrackId}</span>`;
                 div.appendChild(label);
 
                 const audio = document.createElement("audio");
                 audio.controls = true;
-                audio.src = "/api/tracks/" + pt.trackId + "/stream";
+                audio.src = `/api/tracks/${pt.trackId}/stream`;
 
-                // --- improved marker handling so scrubbing still works ---
+                // --- marker handling with scrubbing allowed ---
                 const hasStart = pt.startMs != null;
                 const hasEnd   = pt.endMs != null && pt.endMs > 0;
                 const startSec = hasStart ? (pt.startMs / 1000) : 0;
@@ -611,41 +610,7 @@
                 }
 
                 div.appendChild(audio);
-
-                // marker edit controls
-                const markersDiv = document.createElement("div");
-                markersDiv.className = "small";
-                markersDiv.style.marginTop = "0.3rem";
-
-                const startLabel = document.createElement("span");
-                startLabel.textContent = "Start (ms): ";
-                markersDiv.appendChild(startLabel);
-
-                const startInput = document.createElement("input");
-                startInput.type = "number";
-                startInput.style.width = "6rem";
-                startInput.value = (pt.startMs != null ? pt.startMs : 0);
-                markersDiv.appendChild(startInput);
-
-                const endLabel = document.createElement("span");
-                endLabel.textContent = "  End (ms): ";
-                markersDiv.appendChild(endLabel);
-
-                const endInput = document.createElement("input");
-                endInput.type = "number";
-                endInput.style.width = "6rem";
-                endInput.value = (pt.endMs != null ? pt.endMs : 0);
-                markersDiv.appendChild(endInput);
-
-                const btnSaveMarkers = document.createElement("button");
-                btnSaveMarkers.type = "button";
-                btnSaveMarkers.textContent = "Save markers";
-                btnSaveMarkers.style.marginLeft = "0.3rem";
-                btnSaveMarkers.onclick = () =>
-                    updateTrackMarkers(playlistId, pt.playlistTrackId, startInput, endInput, container);
-                markersDiv.appendChild(btnSaveMarkers);
-
-                div.appendChild(markersDiv);
+                audios.push(audio);
 
                 // remove-from-playlist button
                 const btnRemove = document.createElement("button");
@@ -658,9 +623,19 @@
 
                 container.appendChild(div);
             });
+
+            // sequential playback: when one ends, start the next
+            audios.forEach((audioEl, idx) => {
+                audioEl.addEventListener("ended", () => {
+                    const next = audios[idx + 1];
+                    if (next) {
+                        next.play();
+                    }
+                });
+            });
         } catch (e) {
             console.error(e);
-            container.innerHTML = '<span class="error">Failed to load tracks: ' + e.message + '</span>';
+            container.innerHTML = `<span class="error">Failed to load tracks: ${e.message}</span>`;
         }
     }
 
@@ -678,7 +653,7 @@
             myPlaylists.forEach(p => {
                 const opt = document.createElement("option");
                 opt.value = p.playlistId;
-                opt.textContent = p.name + " (ID: " + p.playlistId + ")";
+                opt.textContent = `${p.name} (ID: ${p.playlistId})`;
                 sel.appendChild(opt);
             });
 
