@@ -90,6 +90,7 @@ public class PlaylistService {
                     dto.setPosition(pt.getPosition());
                     dto.setStartMs(pt.getStartMs());
                     dto.setEndMs(pt.getEndMs());
+                    dto.setTrack(pt.getTrack());
                     return dto;
                 })
                 .toList();

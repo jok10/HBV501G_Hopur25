@@ -52,6 +52,13 @@ public class TrackController {
                 .build();
     }
 
+    @DeleteMapping("/{trackId}")
+    public ResponseEntity<Void> deleteTrack(@PathVariable Long trackId) {
+        if (trackService.delete(trackId)) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
 
 
 }

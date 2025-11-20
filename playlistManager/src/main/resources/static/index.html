@@ -4,358 +4,536 @@
     <meta charset="UTF-8">
     <title>Playlist Manager</title>
     <style>
-        body { font-family: sans-serif; margin: 2rem; }
-        h1, h2 { margin-bottom: 0.3rem; }
-        .box { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
-        label { display: block; margin-top: 0.3rem; }
-        input[type=text], input[type=password], input[type=url], input[type=number] {
-            width: 100%; max-width: 400px;
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 1rem 2rem 3rem;
+            background: #111;
+            color: #eee;
         }
-        button { margin-top: 0.5rem; }
-        .error { color: darkred; margin-top: 0.5rem; }
-        .success { color: darkgreen; margin-top: 0.5rem; }
-        .playlist { margin: 0.5rem 0; }
-        .track { margin: 0.5rem 0; }
+
+        h1, h2, h3 {
+            margin-top: 1.4rem;
+        }
+
+        a { color: #8cf; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .card {
+            background: #1b1b1b;
+            border-radius: 6px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1rem;
+            border: 1px solid #333;
+        }
+
+        label {
+            display: block;
+            margin: 0.3rem 0 0.1rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.35rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: #111;
+            color: #eee;
+            box-sizing: border-box;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 0.3rem;
+        }
+
+        button {
+            margin-top: 0.6rem;
+            padding: 0.35rem 0.9rem;
+            border-radius: 4px;
+            border: 1px solid #666;
+            background: #2b2b2b;
+            color: #eee;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #3b3b3b;
+        }
+
+        .small {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .track-row {
+            border-top: 1px solid #333;
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        audio {
+            margin: 0.3rem 0;
+            width: 100%;
+        }
+
+        .error {
+            color: #ff8585;
+        }
+
+        .ok {
+            color: #9f9;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 999px;
+            background: #262626;
+            font-size: 0.75rem;
+            margin-left: 0.4rem;
+        }
+
+        .inline-buttons {
+            margin-top: 0.4rem;
+        }
+
+        .inline-buttons button {
+            margin-right: 0.4rem;
+        }
     </style>
 </head>
 <body>
 <h1>Playlist Manager</h1>
+<p class="small">
+    Make sure you are logged in (session-based) before using the playlist features.
+</p>
 
-<div id="auth-section" class="box">
-    <h2>Authentication</h2>
+<div class="layout">
+    <!-- LEFT: Tracks & creation -->
+    <div>
+        <!-- Create Track -->
+        <div class="card">
+            <h2>Create Track</h2>
+            <form id="create-track-form">
+                <label>Title
+                    <input type="text" id="track-title" required>
+                </label>
+                <label>Artist
+                    <input type="text" id="track-artist" required>
+                </label>
+                <label>Album
+                    <input type="text" id="track-album">
+                </label>
+                <label>Duration (ms)
+                    <input type="number" id="track-duration" value="180000" min="1000" step="1000">
+                </label>
+                <label>Audio URL (direct .mp3/.ogg/.wav…)
+                    <input type="text" id="track-url" required>
+                </label>
+                <label>MIME type (e.g. <code>audio/mpeg</code>, <code>audio/ogg</code>)
+                    <input type="text" id="track-mime" value="audio/mpeg" required>
+                </label>
+                <button type="submit">Create track</button>
+                <div id="create-track-status" class="small"></div>
+            </form>
+        </div>
 
-    <div id="auth-status">Not logged in</div>
+        <!-- All Tracks -->
+        <div class="card">
+            <h2>All Tracks</h2>
+            <div id="tracks-list" class="small">Loading tracks…</div>
+        </div>
+    </div>
 
-    <h3>Register</h3>
-    <label>
-        Username:
-        <input id="reg-username" type="text">
-    </label>
-    <label>
-        Email:
-        <input id="reg-email" type="text">
-    </label>
-    <label>
-        Password:
-        <input id="reg-password" type="password">
-    </label>
-    <button id="btn-register">Register</button>
+    <!-- RIGHT: Playlists -->
+    <div>
+        <!-- Create Playlist -->
+        <div class="card">
+            <h2>Create Playlist</h2>
+            <form id="create-playlist-form">
+                <label>Name
+                    <input type="text" id="playlist-name" required>
+                </label>
+                <label>
+                    <input type="checkbox" id="playlist-public">
+                    Public playlist
+                </label>
+                <label>Image URL (optional)
+                    <input type="text" id="playlist-image">
+                </label>
+                <button type="submit">Create playlist</button>
+                <div id="create-playlist-status" class="small"></div>
+            </form>
+        </div>
 
-    <h3>Login</h3>
-    <label>
-        Username:
-        <input id="login-username" type="text">
-    </label>
-    <label>
-        Password:
-        <input id="login-password" type="password">
-    </label>
-    <button id="btn-login">Login</button>
-    <button id="btn-logout">Logout</button>
-
-    <div id="auth-message" class=""></div>
-</div>
-
-<div id="playlist-section" class="box" style="display:none;">
-    <h2>My Playlists</h2>
-
-    <h3>Create Playlist</h3>
-    <label>
-        Name:
-        <input id="pl-name" type="text">
-    </label>
-    <label>
-        Public:
-        <input id="pl-public" type="checkbox" checked>
-    </label>
-    <label>
-        Image URL (optional):
-        <input id="pl-image" type="text">
-    </label>
-    <button id="btn-create-playlist">Create Playlist</button>
-
-    <h3>Your Playlists</h3>
-    <div id="my-playlists"></div>
-</div>
-
-<div id="tracks-section" class="box">
-    <h2>Tracks</h2>
-
-    <h3>Create Track (with external audio URL)</h3>
-    <label>
-        Title:
-        <input id="tr-title" type="text">
-    </label>
-    <label>
-        Artist:
-        <input id="tr-artist" type="text">
-    </label>
-    <label>
-        Album:
-        <input id="tr-album" type="text">
-    </label>
-    <label>
-        Duration (ms):
-        <input id="tr-duration" type="number" value="600000">
-    </label>
-    <label>
-        Audio URL:
-        <input id="tr-fileurl" type="url" placeholder="https://example.com/song.mp3">
-    </label>
-    <label>
-        MIME type:
-        <input id="tr-mime" type="text" value="audio/mpeg">
-    </label>
-    <button id="btn-create-track">Create Track</button>
-
-    <h3>All Tracks (page 0, size 10)</h3>
-    <div id="tracks-list"></div>
+        <!-- My Playlists -->
+        <div class="card">
+            <h2>My Playlists</h2>
+            <div id="my-playlists" class="small">Loading playlists…</div>
+        </div>
+    </div>
 </div>
 
 <script>
-    let currentUserId = null;
-    let currentToken = null; // we don't strictly need it for session-based auth
+    // --- global-ish state ---
+    let allTracks = [];      // list of tracks from /api/tracks
+    let myPlaylists = [];    // list from /api/playlists/mine
 
-    function setAuthMessage(msg, isError = false) {
-        const el = document.getElementById("auth-message");
-        el.textContent = msg || "";
-        el.className = isError ? "error" : "success";
+    // -------- helper fetch with JSON ----------
+    async function apiFetch(url, options = {}) {
+        const opts = Object.assign({
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin"
+        }, options);
+        const res = await fetch(url, opts);
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error("HTTP " + res.status + " " + res.statusText + " – " + text);
+        }
+        const ct = res.headers.get("Content-Type") || "";
+        if (ct.includes("application/json")) {
+            return res.json();
+        }
+        return null;
     }
 
-    function updateAuthStatus() {
-        const statusEl = document.getElementById("auth-status");
-        if (currentUserId) {
-            statusEl.textContent = "Logged in as user #" + currentUserId;
-            document.getElementById("playlist-section").style.display = "block";
-        } else {
-            statusEl.textContent = "Not logged in";
-            document.getElementById("playlist-section").style.display = "none";
+    // -------- tracks --------
+    async function loadTracks() {
+        const container = document.getElementById("tracks-list");
+        try {
+            const page = await apiFetch("/api/tracks?page=0&size=50", {method: "GET"});
+            allTracks = page.content || [];
+            if (allTracks.length === 0) {
+                container.textContent = "No tracks in the system yet.";
+                return;
+            }
+
+            container.innerHTML = "";
+            allTracks.forEach(t => {
+                const div = document.createElement("div");
+                div.className = "track-row";
+
+                const title = document.createElement("div");
+                title.innerHTML = `<strong>${t.title}</strong> by ${t.artist} <span class="pill">ID: ${t.trackId}</span>`;
+                div.appendChild(title);
+
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.src = `/api/tracks/${t.trackId}/stream`;
+                div.appendChild(audio);
+
+                // Add-to-playlist controls
+                const controls = document.createElement("div");
+                controls.className = "small inline-buttons";
+
+                const select = document.createElement("select");
+                select.className = "playlist-select";
+                controls.appendChild(select);
+
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = "Add to playlist";
+                btn.onclick = () => addTrackToSelectedPlaylist(t.trackId, select);
+                controls.appendChild(btn);
+
+                div.appendChild(controls);
+                container.appendChild(div);
+            });
+
+            refreshPlaylistSelectOptions();
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = `<span class="error">Failed to load tracks: ${e.message}</span>`;
         }
     }
 
-    async function checkMe() {
+    async function createTrack(e) {
+        e.preventDefault();
+        const status = document.getElementById("create-track-status");
+        status.textContent = "";
+
+        const body = {
+            title: document.getElementById("track-title").value.trim(),
+            artist: document.getElementById("track-artist").value.trim(),
+            album: document.getElementById("track-album").value.trim() || null,
+            durationMs: parseInt(document.getElementById("track-duration").value, 10) || 0,
+            fileUrl: document.getElementById("track-url").value.trim(),
+            mimeType: document.getElementById("track-mime").value.trim()
+        };
+
         try {
-            const res = await fetch("/api/auth/me");
-            if (!res.ok) {
-                currentUserId = null;
-                updateAuthStatus();
+            await apiFetch("/api/tracks", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+            status.innerHTML = `<span class="ok">Track created.</span>`;
+            document.getElementById("create-track-form").reset();
+            document.getElementById("track-duration").value = "180000";
+            await loadTracks();
+        } catch (e2) {
+            console.error(e2);
+            status.innerHTML = `<span class="error">Failed: ${e2.message}</span>`;
+        }
+    }
+
+    // -------- playlists --------
+    async function loadMyPlaylists() {
+        const container = document.getElementById("my-playlists");
+        try {
+            const res = await fetch("/api/playlists/mine", {credentials: "same-origin"});
+            if (res.status === 401 || res.status === 403) {
+                container.innerHTML =
+                    `<span class="error">You are not logged in or session expired. Log in, then reload this page.</span>`;
+                myPlaylists = [];
+                refreshPlaylistSelectOptions();
                 return;
             }
-            const data = await res.json();
-            if (data.authenticated) {
-                currentUserId = data.userId;
-            } else {
-                currentUserId = null;
+            if (!res.ok) {
+                throw new Error("HTTP " + res.status + " " + res.statusText);
             }
-            updateAuthStatus();
-            if (currentUserId) {
-                await loadMyPlaylists();
+            myPlaylists = await res.json();
+            refreshPlaylistSelectOptions();
+
+            if (myPlaylists.length === 0) {
+                container.textContent = "You have no playlists yet.";
+                return;
+            }
+
+            container.innerHTML = "";
+            for (const p of myPlaylists) {
+                const card = document.createElement("div");
+                card.className = "track-row";
+
+                const header = document.createElement("div");
+                header.innerHTML =
+                    `<strong>${p.name}</strong> <span class="pill">ID: ${p.playlistId}</span>` +
+                    (p.public ? `<span class="pill">public</span>` : `<span class="pill">private</span>`);
+                card.appendChild(header);
+
+                const created = document.createElement("div");
+                created.className = "small";
+                if (p.createdAt) {
+                    created.textContent = "Created: " + p.createdAt;
+                }
+                card.appendChild(created);
+
+                const buttons = document.createElement("div");
+                buttons.className = "inline-buttons";
+
+                const btnLoad = document.createElement("button");
+                btnLoad.type = "button";
+                btnLoad.textContent = "Show tracks";
+                buttons.appendChild(btnLoad);
+
+                const btnDelete = document.createElement("button");
+                btnDelete.type = "button";
+                btnDelete.textContent = "Delete playlist";
+                btnDelete.onclick = () => deletePlaylist(p.playlistId);
+                buttons.appendChild(btnDelete);
+
+                card.appendChild(buttons);
+
+                const tracksDiv = document.createElement("div");
+                tracksDiv.className = "small";
+                tracksDiv.style.marginTop = "0.5rem";
+                tracksDiv.textContent = " ";
+                card.appendChild(tracksDiv);
+
+                btnLoad.onclick = () => loadPlaylistTracks(p.playlistId, tracksDiv);
+
+                container.appendChild(card);
             }
         } catch (e) {
             console.error(e);
+            container.innerHTML = `<span class="error">Failed to load playlists: ${e.message}</span>`;
         }
     }
 
-    async function loadMyPlaylists() {
-        if (!currentUserId) return;
-        const res = await fetch("/api/playlists/mine");
-        if (!res.ok) {
-            document.getElementById("my-playlists").textContent = "Could not load playlists.";
+    async function createPlaylist(e) {
+        e.preventDefault();
+        const status = document.getElementById("create-playlist-status");
+        status.textContent = "";
+
+        const body = {
+            name: document.getElementById("playlist-name").value.trim(),
+            public: document.getElementById("playlist-public").checked,
+            imageUrl: document.getElementById("playlist-image").value.trim() || null
+        };
+
+        try {
+            await apiFetch("/api/playlists", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+            status.innerHTML = `<span class="ok">Playlist created.</span>`;
+            document.getElementById("create-playlist-form").reset();
+            await loadMyPlaylists();
+        } catch (e2) {
+            console.error(e2);
+            status.innerHTML = `<span class="error">Failed: ${e2.message}</span>`;
+        }
+    }
+
+    async function deletePlaylist(playlistId) {
+        if (!confirm(`Delete playlist ${playlistId}? This cannot be undone.`)) {
             return;
         }
-        const data = await res.json();
-        const container = document.getElementById("my-playlists");
-        container.innerHTML = "";
-        data.forEach(pl => {
-            const div = document.createElement("div");
-            div.className = "playlist";
-            div.innerHTML = `
-                <strong>${pl.name}</strong> (ID: ${pl.playlistId}, public: ${pl.public})<br>
-                Created at: ${pl.createdAt || ""}<br>
-                <button onclick="viewPlaylistTracks(${pl.playlistId})">View Tracks</button>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    async function viewPlaylistTracks(playlistId) {
-        const res = await fetch(`/api/playlists/${playlistId}/tracks`);
-        if (!res.ok) {
-            alert("Could not load tracks for playlist " + playlistId);
-            return;
+        try {
+            await apiFetch(`/api/playlists/${playlistId}`, {
+                method: "DELETE"
+            });
+            await loadMyPlaylists();
+            alert(`Playlist ${playlistId} deleted.`);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to delete playlist: " + e.message);
         }
-        const tracks = await res.json();
-        alert("Tracks for playlist " + playlistId + ":\n" +
-            tracks.map(t => `#${t.position}: trackId=${t.trackId}, start=${t.startMs}, end=${t.endMs}`).join("\n"));
     }
 
-    async function loadTracks() {
-        const res = await fetch("/api/tracks?page=0&size=10");
-        if (!res.ok) {
-            document.getElementById("tracks-list").textContent = "Could not load tracks.";
-            return;
-        }
-        const data = await res.json();
-        const container = document.getElementById("tracks-list");
-        container.innerHTML = "";
-        data.content.forEach(t => {
-            const div = document.createElement("div");
-            div.className = "track";
-            div.innerHTML = `
-                <strong>${t.title}</strong> by ${t.artist} (ID: ${t.trackId})<br>
-                <audio controls src="/api/tracks/${t.trackId}/stream"></audio><br>
-                <label>
-                    Playlist ID:
-                    <input type="number" min="1" value="" id="pl-for-track-${t.trackId}">
-                </label>
-                <button onclick="addTrackToPlaylist(${t.trackId})">Add to playlist</button>
-                <hr>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    async function addTrackToPlaylist(trackId) {
-        const input = document.getElementById("pl-for-track-" + trackId);
-        const playlistId = input.value;
+    async function addTrackToSelectedPlaylist(trackId, selectEl) {
+        const playlistId = selectEl.value;
         if (!playlistId) {
-            alert("Enter a playlist ID first.");
+            alert("Choose a playlist first.");
             return;
         }
-        const res = await fetch(`/api/playlists/${playlistId}/tracks?trackId=${trackId}`, {
-            method: "POST"
-        });
-        if (!res.ok) {
-            alert("Failed to add track to playlist (HTTP " + res.status + ")");
-            return;
+        try {
+            await apiFetch(`/api/playlists/${playlistId}/tracks?trackId=${trackId}`, {
+                method: "POST"
+            });
+            alert(`Track ${trackId} added to playlist ${playlistId}.`);
+            // Just reload the playlists so the viewer stays up-to-date
+            await loadMyPlaylists();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to add: " + e.message);
         }
-        const data = await res.json();
-        alert("Added track to playlist. PlaylistTrack id: " + data.playlistTrackId);
     }
 
-    // ---- Button wiring ----
-    document.getElementById("btn-register").onclick = async () => {
-        const username = document.getElementById("reg-username").value;
-        const email = document.getElementById("reg-email").value;
-        const password = document.getElementById("reg-password").value;
+    async function deletePlaylistTrack(playlistId, playlistTrackId, container) {
+        if (!confirm(`Remove track ${playlistTrackId} from playlist ${playlistId}?`)) {
+            return;
+        }
+        try {
+            await apiFetch(`/api/playlists/${playlistId}/tracks/${playlistTrackId}`, {
+                method: "DELETE"
+            });
+            await loadPlaylistTracks(playlistId, container);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to remove track: " + e.message);
+        }
+    }
 
-        setAuthMessage("");
+    async function loadPlaylistTracks(playlistId, container) {
+        container.textContent = "Loading…";
+        try {
+            const res = await apiFetch(`/api/playlists/${playlistId}/tracks`, {method: "GET"});
+            if (!Array.isArray(res) || res.length === 0) {
+                container.textContent = "No tracks in this playlist yet.";
+                return;
+            }
+            container.innerHTML = "";
+            res.forEach(pt => {
+                const meta = allTracks.find(t => t.trackId === pt.trackId);
+                const div = document.createElement("div");
+                div.style.borderTop = "1px solid #333";
+                div.style.paddingTop = "0.4rem";
+                div.style.marginTop = "0.4rem";
 
-        const res = await fetch("/api/auth/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, email, password })
+                const label = document.createElement("div");
+                const title = meta ? `${meta.title} by ${meta.artist}` : `Track ID ${pt.trackId}`;
+                label.innerHTML = `#${pt.position + 1}: <strong>${title}</strong>
+                    <span class="pill">playlistTrackId: ${pt.playlistTrackId}</span>`;
+                div.appendChild(label);
+
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.src = `/api/tracks/${pt.trackId}/stream`;
+
+                // respect markers (startMs / endMs)
+                const startSec = (pt.startMs || 0) / 1000;
+                const endSec = (pt.endMs || 0) / 1000;
+                if (pt.startMs != null || pt.endMs != null) {
+                    audio.dataset.start = startSec;
+                    if (endSec > 0) audio.dataset.end = endSec;
+
+                    audio.addEventListener("play", function () {
+                        if (this.dataset.start) {
+                            this.currentTime = parseFloat(this.dataset.start);
+                        }
+                    });
+                    audio.addEventListener("timeupdate", function () {
+                        if (this.dataset.end) {
+                            const end = parseFloat(this.dataset.end);
+                            if (this.currentTime > end + 0.05) {
+                                this.pause();
+                            }
+                        }
+                    });
+                }
+
+                div.appendChild(audio);
+
+                // remove-from-playlist button
+                const btnRow = document.createElement("div");
+                btnRow.className = "inline-buttons small";
+                const btnRemove = document.createElement("button");
+                btnRemove.type = "button";
+                btnRemove.textContent = "Remove from playlist";
+                btnRemove.onclick = () => deletePlaylistTrack(playlistId, pt.playlistTrackId, container);
+                btnRow.appendChild(btnRemove);
+                div.appendChild(btnRow);
+
+                container.appendChild(div);
+            });
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = `<span class="error">Failed to load tracks: ${e.message}</span>`;
+        }
+    }
+
+    // Fill all "playlist-select" elements with options from myPlaylists
+    function refreshPlaylistSelectOptions() {
+        const selects = document.querySelectorAll("select.playlist-select");
+        selects.forEach(sel => {
+            const current = sel.value;
+            sel.innerHTML = "";
+            const optEmpty = document.createElement("option");
+            optEmpty.value = "";
+            optEmpty.textContent = "-- choose playlist --";
+            sel.appendChild(optEmpty);
+
+            myPlaylists.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.playlistId;
+                opt.textContent = `${p.name} (ID: ${p.playlistId})`;
+                sel.appendChild(opt);
+            });
+
+            if (current) {
+                sel.value = current;
+            }
         });
+    }
 
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch (_) { data = null; }
+    // -------- wire up events & initial load --------
+    document.getElementById("create-track-form")
+        .addEventListener("submit", createTrack);
+    document.getElementById("create-playlist-form")
+        .addEventListener("submit", createPlaylist);
 
-        if (!res.ok) {
-            setAuthMessage(data?.error || "Registration failed", true);
-            return;
-        }
-
-        currentUserId = data.userId;
-        updateAuthStatus();
-        setAuthMessage("Registered and logged in as " + data.username);
-        await loadMyPlaylists();
-    };
-
-    document.getElementById("btn-login").onclick = async () => {
-        const username = document.getElementById("login-username").value;
-        const password = document.getElementById("login-password").value;
-
-        setAuthMessage("");
-
-        const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
-        });
-
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch (_) { data = null; }
-
-        if (!res.ok) {
-            setAuthMessage(data?.error || "Login failed", true);
-            currentUserId = null;
-            updateAuthStatus();
-            return;
-        }
-
-        currentUserId = data.userId;
-        currentToken = data.token;
-        updateAuthStatus();
-        setAuthMessage("Logged in as " + data.username);
-        await loadMyPlaylists();
-    };
-
-    document.getElementById("btn-logout").onclick = async () => {
-        await fetch("/api/auth/logout", { method: "POST" });
-        currentUserId = null;
-        currentToken = null;
-        updateAuthStatus();
-        setAuthMessage("Logged out.");
-        document.getElementById("my-playlists").innerHTML = "";
-    };
-
-    document.getElementById("btn-create-playlist").onclick = async () => {
-        if (!currentUserId) {
-            alert("You must be logged in to create a playlist.");
-            return;
-        }
-        const name = document.getElementById("pl-name").value;
-        const isPublic = document.getElementById("pl-public").checked;
-        const imageUrl = document.getElementById("pl-image").value || null;
-
-        const res = await fetch("/api/playlists", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, isPublic, imageUrl })
-        });
-
-        if (!res.ok) {
-            alert("Failed to create playlist (HTTP " + res.status + ")");
-            return;
-        }
-
-        const data = await res.json();
-        alert("Created playlist with ID " + data.playlistId);
-        await loadMyPlaylists();
-    };
-
-    document.getElementById("btn-create-track").onclick = async () => {
-        const title = document.getElementById("tr-title").value;
-        const artist = document.getElementById("tr-artist").value;
-        const album = document.getElementById("tr-album").value;
-        const durationMs = Number(document.getElementById("tr-duration").value) || 0;
-        const fileUrl = document.getElementById("tr-fileurl").value;
-        const mimeType = document.getElementById("tr-mime").value;
-
-        const res = await fetch("/api/tracks", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, artist, album, durationMs, fileUrl, mimeType })
-        });
-
-        if (!res.ok) {
-            alert("Failed to create track (HTTP " + res.status + ")");
-            return;
-        }
-
-        const data = await res.json();
-        alert("Created track with ID " + data.trackId);
-        await loadTracks();
-    };
-
-    // initial load
-    (async () => {
-        await checkMe();   // see if session already has a user
-        await loadTracks();
-
-    })();
+    // Initial data fetch
+    loadTracks();
+    loadMyPlaylists();
 </script>
 </body>
 </html>

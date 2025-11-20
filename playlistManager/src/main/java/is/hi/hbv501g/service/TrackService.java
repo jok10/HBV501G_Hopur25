@@ -5,6 +5,7 @@ import is.hi.hbv501g.repository.TrackRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TrackService {
@@ -22,4 +23,14 @@ public class TrackService {
         t.setDurationMs(durationMs != null ? durationMs : 0L);
         return tracks.save(t);
     }
+
+    @Transactional
+    public boolean delete(Long id) {
+        if (tracks.existsById(id)) {
+            tracks.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
 }
