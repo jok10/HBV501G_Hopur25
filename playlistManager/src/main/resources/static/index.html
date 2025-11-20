@@ -40,6 +40,7 @@
         }
 
         input[type="text"],
+        input[type="password"],
         input[type="number"],
         select {
             width: 100%;
@@ -102,17 +103,63 @@
             margin-left: 0.4rem;
         }
 
-        .inline-buttons {
-            margin-top: 0.4rem;
+        .auth-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .inline-buttons button {
-            margin-right: 0.4rem;
+        .auth-row > div {
+            flex: 1 1 260px;
         }
     </style>
 </head>
 <body>
 <h1>Playlist Manager</h1>
+
+<div class="card">
+    <h2>Login / Register</h2>
+    <p class="small">
+        These endpoints assume you have:
+        <code>POST /api/auth/register</code> and <code>POST /api/auth/login</code>
+        that use HTTP sessions (<code>HttpSession.setAttribute("userId", ...)</code>).
+    </p>
+    <div class="auth-row">
+        <!-- Register -->
+        <div>
+            <h3>Register</h3>
+            <form id="register-form">
+                <label>Username
+                    <input type="text" id="reg-username" required>
+                </label>
+                <label>Email
+                    <input type="text" id="reg-email">
+                </label>
+                <label>Password
+                    <input type="password" id="reg-password" required>
+                </label>
+                <button type="submit">Register</button>
+            </form>
+        </div>
+
+        <!-- Login -->
+        <div>
+            <h3>Login</h3>
+            <form id="login-form">
+                <label>Username
+                    <input type="text" id="login-username" required>
+                </label>
+                <label>Password
+                    <input type="password" id="login-password" required>
+                </label>
+                <button type="submit">Login</button>
+            </form>
+            <button id="logout-button" type="button">Logout</button>
+        </div>
+    </div>
+    <div id="auth-status" class="small"></div>
+</div>
+
 <p class="small">
     Make sure you are logged in (session-based) before using the playlist features.
 </p>
@@ -206,12 +253,80 @@
         return null;
     }
 
+    // -------- AUTH --------
+
+    async function doRegister(e) {
+        e.preventDefault();
+        const status = document.getElementById("auth-status");
+        status.textContent = "";
+
+        const body = {
+            username: document.getElementById("reg-username").value.trim(),
+            email: document.getElementById("reg-email").value.trim() || null,
+            password: document.getElementById("reg-password").value
+        };
+
+        try {
+            await apiFetch("/api/auth/register", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+            status.innerHTML = '<span class="ok">Registered successfully. You can now log in.</span>';
+            document.getElementById("register-form").reset();
+        } catch (e2) {
+            console.error(e2);
+            status.innerHTML = `<span class="error">Register failed: ${e2.message}</span>`;
+        }
+    }
+
+    async function doLogin(e) {
+        e.preventDefault();
+        const status = document.getElementById("auth-status");
+        status.textContent = "";
+
+        const body = {
+            username: document.getElementById("login-username").value.trim(),
+            password: document.getElementById("login-password").value
+        };
+
+        try {
+            await apiFetch("/api/auth/login", {
+                method: "POST",
+                body: JSON.stringify(body)
+            });
+            status.innerHTML = '<span class="ok">Login OK (session set).</span>';
+            document.getElementById("login-form").reset();
+            await loadMyPlaylists();
+        } catch (e2) {
+            console.error(e2);
+            status.innerHTML = `<span class="error">Login failed: ${e2.message}</span>`;
+        }
+    }
+
+    async function doLogout() {
+        const status = document.getElementById("auth-status");
+        status.textContent = "";
+        try {
+            await apiFetch("/api/auth/logout", {
+                method: "POST",
+                body: "{}"
+            });
+            status.innerHTML = '<span class="ok">Logged out.</span>';
+            myPlaylists = [];
+            refreshPlaylistSelectOptions();
+            document.getElementById("my-playlists").textContent = "You have no playlists yet (or are logged out).";
+        } catch (e2) {
+            console.error(e2);
+            status.innerHTML = `<span class="error">Logout failed (maybe no endpoint?): ${e2.message}</span>`;
+        }
+    }
+
     // -------- tracks --------
     async function loadTracks() {
         const container = document.getElementById("tracks-list");
         try {
             const page = await apiFetch("/api/tracks?page=0&size=50", {method: "GET"});
-            allTracks = page.content || [];
+            allTracks = page && page.content ? page.content : [];
             if (allTracks.length === 0) {
                 container.textContent = "No tracks in the system yet.";
                 return;
@@ -233,7 +348,7 @@
 
                 // Add-to-playlist controls
                 const controls = document.createElement("div");
-                controls.className = "small inline-buttons";
+                controls.className = "small";
 
                 const select = document.createElement("select");
                 select.className = "playlist-select";
@@ -326,21 +441,10 @@
                 }
                 card.appendChild(created);
 
-                const buttons = document.createElement("div");
-                buttons.className = "inline-buttons";
-
                 const btnLoad = document.createElement("button");
                 btnLoad.type = "button";
                 btnLoad.textContent = "Show tracks";
-                buttons.appendChild(btnLoad);
-
-                const btnDelete = document.createElement("button");
-                btnDelete.type = "button";
-                btnDelete.textContent = "Delete playlist";
-                btnDelete.onclick = () => deletePlaylist(p.playlistId);
-                buttons.appendChild(btnDelete);
-
-                card.appendChild(buttons);
+                card.appendChild(btnLoad);
 
                 const tracksDiv = document.createElement("div");
                 tracksDiv.className = "small";
@@ -383,22 +487,6 @@
         }
     }
 
-    async function deletePlaylist(playlistId) {
-        if (!confirm(`Delete playlist ${playlistId}? This cannot be undone.`)) {
-            return;
-        }
-        try {
-            await apiFetch(`/api/playlists/${playlistId}`, {
-                method: "DELETE"
-            });
-            await loadMyPlaylists();
-            alert(`Playlist ${playlistId} deleted.`);
-        } catch (e) {
-            console.error(e);
-            alert("Failed to delete playlist: " + e.message);
-        }
-    }
-
     async function addTrackToSelectedPlaylist(trackId, selectEl) {
         const playlistId = selectEl.value;
         if (!playlistId) {
@@ -410,26 +498,10 @@
                 method: "POST"
             });
             alert(`Track ${trackId} added to playlist ${playlistId}.`);
-            // Just reload the playlists so the viewer stays up-to-date
-            await loadMyPlaylists();
+            // you could call loadMyPlaylists() here if you want to refresh
         } catch (e) {
             console.error(e);
             alert("Failed to add: " + e.message);
-        }
-    }
-
-    async function deletePlaylistTrack(playlistId, playlistTrackId, container) {
-        if (!confirm(`Remove track ${playlistTrackId} from playlist ${playlistId}?`)) {
-            return;
-        }
-        try {
-            await apiFetch(`/api/playlists/${playlistId}/tracks/${playlistTrackId}`, {
-                method: "DELETE"
-            });
-            await loadPlaylistTracks(playlistId, container);
-        } catch (e) {
-            console.error(e);
-            alert("Failed to remove track: " + e.message);
         }
     }
 
@@ -482,17 +554,6 @@
                 }
 
                 div.appendChild(audio);
-
-                // remove-from-playlist button
-                const btnRow = document.createElement("div");
-                btnRow.className = "inline-buttons small";
-                const btnRemove = document.createElement("button");
-                btnRemove.type = "button";
-                btnRemove.textContent = "Remove from playlist";
-                btnRemove.onclick = () => deletePlaylistTrack(playlistId, pt.playlistTrackId, container);
-                btnRow.appendChild(btnRemove);
-                div.appendChild(btnRow);
-
                 container.appendChild(div);
             });
         } catch (e) {
@@ -530,6 +591,12 @@
         .addEventListener("submit", createTrack);
     document.getElementById("create-playlist-form")
         .addEventListener("submit", createPlaylist);
+    document.getElementById("register-form")
+        .addEventListener("submit", doRegister);
+    document.getElementById("login-form")
+        .addEventListener("submit", doLogin);
+    document.getElementById("logout-button")
+        .addEventListener("click", doLogout);
 
     // Initial data fetch
     loadTracks();
