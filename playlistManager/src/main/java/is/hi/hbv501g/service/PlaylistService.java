@@ -106,13 +106,25 @@ public class PlaylistService {
     }
 
     // DELETE playlist
+    // DELETE playlist
     public boolean deletePlaylist(Long playlistId) {
-        if (playlists.existsById(playlistId)) {
-            playlists.deleteById(playlistId);
-
-            return true;
+        // Check if playlist exists
+        Optional<Playlist> opt = playlists.findById(playlistId);
+        if (!opt.isPresent()) {
+            return false;
         }
-        return false;
+
+        // 1) Delete all playlist tracks for this playlist
+        List<PlaylistTrack> pts =
+                playlistTracks.findByPlaylist_PlaylistIdOrderByPositionAsc(playlistId);
+        if (!pts.isEmpty()) {
+            playlistTracks.deleteAll(pts);
+        }
+
+        // 2) Delete the playlist itself
+        playlists.delete(opt.get());
+
+        return true;
     }
 
     // DELETE track from playlist
