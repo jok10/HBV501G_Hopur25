@@ -57,4 +57,9 @@ public class UserService {
     public Optional<User> findById(Long id) {
         return userRepo.findById(id);
     }
+
+    public boolean passwordMatches(String raw, User user) {
+        return encoder.matches(raw, user.getPasswordHash());
+    }
+
 }

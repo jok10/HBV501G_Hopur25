@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.servlet.http.HttpSession;
+
 
 import java.net.URI;
 
@@ -32,13 +34,29 @@ public class TrackController {
 
     // POST /api/tracks
     @PostMapping
-    public ResponseEntity<Track> create(@RequestBody CreateTrackRequest req) {
-        Track t = trackService.create(req.getTitle(), req.getArtist(), req.getAlbum(), req.getDurationMs());
+    public ResponseEntity<Track> create(@RequestBody CreateTrackRequest req, HttpSession session) {
+
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Track t = trackService.create(
+                req.getTitle(),
+                req.getArtist(),
+                req.getAlbum(),
+                req.getDurationMs()
+        );
         t.setFileUrl(req.getFileUrl());
         t.setMimeType(req.getMimeType());
+
         t = trackRepository.save(t);
-        return ResponseEntity.created(URI.create("/api/tracks/" + t.getTrackId())).body(t);
+
+        return ResponseEntity
+                .created(URI.create("/api/tracks/" + t.getTrackId()))
+                .body(t);
     }
+
 
     @GetMapping("/{id}/stream")
     public ResponseEntity<Void> streamTrack(@PathVariable Long id) {

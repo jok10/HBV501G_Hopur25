@@ -20,104 +20,73 @@ public class AuthController {
         this.users = users;
     }
 
-    // ---------- DTOs ----------
+    // -------------- REGISTER (ALSO LOGS IN) --------------
     public static class RegisterRequest {
-        private String username;
-        private String email;
-        private String password;
-
-        public String getUsername() { return username; }
-        public String getEmail() { return email; }
-        public String getPassword() { return password; }
-
-        public void setUsername(String username) { this.username = username; }
-        public void setEmail(String email) { this.email = email; }
-        public void setPassword(String password) { this.password = password; }
+        public String username;
+        public String email;
+        public String password;
     }
 
-    public static class LoginRequest {
-        private String username;
-        private String password;
-
-        public String getUsername() { return username; }
-        public String getPassword() { return password; }
-
-        public void setUsername(String username) { this.username = username; }
-        public void setPassword(String password) { this.password = password; }
-    }
-
-    // ---------- REGISTER ----------
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req, HttpSession session) {
-        // basic sanity check, you can make this stricter
-        if (req.getUsername() == null || req.getUsername().isBlank() ||
-                req.getPassword() == null || req.getPassword().isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
+        if (req.username == null || req.password == null || req.username.isBlank() || req.password.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "username + password required"));
         }
 
         User u = new User();
-        u.setUsername(req.getUsername());
-        u.setEmail(req.getEmail());
-        // IMPORTANT: we use the password field and let UserService hash it
-        u.setPasswordHash(req.getPassword());
-
+        u.setUsername(req.username);
+        u.setEmail(req.email);
+        u.setPasswordHash(req.password); // UserService hashes it
         User saved = users.register(u);
 
-        // log the user in via session
+        // store session login
         session.setAttribute("userId", saved.getUserId());
 
-        return ResponseEntity
-                .created(URI.create("/api/users/" + saved.getUserId()))
-                .body(Map.of(
-                        "userId", saved.getUserId(),
-                        "username", saved.getUsername()
-                ));
+        return ResponseEntity.created(URI.create("/api/users/" + saved.getUserId()))
+                .body(Map.of("userId", saved.getUserId(), "username", saved.getUsername()));
     }
 
-    // ---------- LOGIN ----------
+    // -------------- LOGIN (SESSION ONLY) --------------
+    public static class LoginRequest {
+        public String username;
+        public String password;
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req, HttpSession session) {
-        String token = users.authenticate(req.getUsername(), req.getPassword());
-        if (token == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "Invalid username or password"));
+        if (req.username == null || req.password == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "username + password required"));
         }
 
-        Optional<User> userOpt = users.findByUsername(req.getUsername());
-        if (userOpt.isEmpty()) {
-            // Should not happen if authenticate() succeeded, but just in case
-            return ResponseEntity.status(500).body(Map.of("error", "User not found after authentication"));
+        Optional<User> userOpt = users.findByUsername(req.username);
+        if (userOpt.isEmpty() || !users.passwordMatches(req.password, userOpt.get())) {
+            return ResponseEntity.status(401).body(Map.of("error", "invalid credentials"));
         }
 
         User user = userOpt.get();
-
-        // Persist login in session
         session.setAttribute("userId", user.getUserId());
 
-        // We *also* return the JWT if you want to use it later
         return ResponseEntity.ok(Map.of(
-                "token", token,
+                "loggedIn", true,
                 "userId", user.getUserId(),
                 "username", user.getUsername()
         ));
     }
 
-    // ---------- LOGOUT ----------
+    // -------------- LOGOUT --------------
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpSession session) {
+    public ResponseEntity<?> logout(HttpSession session) {
         session.invalidate();
         return ResponseEntity.noContent().build();
     }
 
-    // ---------- WHO AM I ----------
+    // -------------- WHO AM I --------------
     @GetMapping("/me")
     public ResponseEntity<?> me(HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
+        Long uid = (Long) session.getAttribute("userId");
+        if (uid == null) {
             return ResponseEntity.status(401).body(Map.of("authenticated", false));
         }
-        return ResponseEntity.ok(Map.of(
-                "authenticated", true,
-                "userId", userId
-        ));
+        return ResponseEntity.ok(Map.of("authenticated", true, "userId", uid));
     }
 }

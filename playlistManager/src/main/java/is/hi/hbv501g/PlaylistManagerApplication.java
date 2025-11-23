@@ -9,7 +9,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 // this is team member Valentin
 
-@SpringBootApplication(scanBasePackages = "is.hi.hbv501g")
+
+
+@SpringBootApplication(
+        scanBasePackages = "is.hi.hbv501g"
+)
 @EnableJpaRepositories(basePackages = "is.hi.hbv501g.repository")
 @EntityScan(basePackages = "is.hi.hbv501g.domain")
 public class PlaylistManagerApplication {

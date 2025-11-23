@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -182,4 +183,13 @@ public class PlaylistController {
             return ResponseEntity.status(403).build();
         }
     }
+
+    @GetMapping("/debug/session")
+    public Map<String,Object> dbg(HttpSession session) {
+        return Map.of(
+                "sessionUserId", session.getAttribute("userId"),
+                "securityContext", session.getAttribute("SPRING_SECURITY_CONTEXT")
+        );
+    }
+
 }
